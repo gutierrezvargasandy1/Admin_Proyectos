@@ -1,0 +1,46 @@
+
+# Maven y Gradle
+**/target/
+**/build/
+.gradle/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+.project
+.classpath
+.settings/
+
+# Java compilado
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+logs/
+
+# Variables de entorno y credenciales
+.env
+.env.*
+!.env.example
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Respaldos y temporales
+*.bak
+*.backup
+*.tmp
+*.swp
+
+# Multimedia pesada
+Ejercicio5Cliente/src/main/resources/static/Images/hola.gif
+Ejercicio5Cliente/src/main/resources/static/Images/manual.mp4
+Ejercicio5Cliente/src/main/resources/static/Images/tutorial.mp4
+Ejercicio5Cliente/src/main/resources/static/Images/fondo.gif
+Ejercicio5Cliente/src/main/resources/static/Images/fondoLogin.gif
