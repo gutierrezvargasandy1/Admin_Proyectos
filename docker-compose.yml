@@ -14,15 +14,28 @@ services:
     networks:
       - ci-net
 
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb-server
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: db_cbtis
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - ci-net
+
   sonarqube:
     image: sonarqube:community
     container_name: sonarqube-server
     restart: unless-stopped
     ports:
       - "9000:9000"
-    environment:
-      - sonar.jdbc.username=sonar
-      - sonar.jdbc.password=sonar
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_extensions:/opt/sonarqube/extensions
@@ -32,6 +45,7 @@ services:
 
 volumes:
   jenkins_home:
+  mariadb_data:
   sonarqube_data:
   sonarqube_extensions:
   sonarqube_logs:
