@@ -1,0 +1,132 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'jdk21'          // JDK 21 configurado en Manage Jenkins > Tools
+        maven 'maven-3.9'    // Maven configurado en Manage Jenkins > Tools
+    }
+
+    environment {
+        APP_DIR = 'Ejercicio5Cliente'
+    }
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 60, unit: 'MINUTES')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Verificar entorno') {
+            steps {
+                sh 'java -version'
+                sh 'mvn -version'
+            }
+        }
+
+        stage('Compilar') {
+            steps {
+                dir(APP_DIR) {
+                    sh 'mvn -B clean compile'
+                }
+            }
+        }
+
+        stage('Pruebas y cobertura') {
+            steps {
+                dir(APP_DIR) {
+                    // Surefire (pruebas) + JaCoCo report + JaCoCo check (falla si la cobertura de metodos < 100%)
+                    sh 'mvn -B verify'
+                }
+            }
+            post {
+                always {
+                    junit testResults: "${APP_DIR}/target/surefire-reports/*.xml", allowEmptyResults: true
+                    jacoco(
+                        execPattern:      "${APP_DIR}/target/jacoco.exec",
+                        classPattern:     "${APP_DIR}/target/classes",
+                        sourcePattern:    "${APP_DIR}/src/main/java",
+                        exclusionPattern: '**/Ejercicio5ClienteApplication.class'
+                    )
+                    publishHTML(target: [
+                        reportName:  'Reporte JaCoCo',
+                        reportDir:   "${APP_DIR}/target/site/jacoco",
+                        reportFiles: 'index.html',
+                        keepAll: true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing: true
+                    ])
+                }
+            }
+        }
+
+        stage('Analisis SonarQube') {
+            steps {
+                dir(APP_DIR) {
+                    withSonarQubeEnv('sonarqube') {
+                        sh 'mvn -B sonar:sonar'
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                // SonarQube bloquea webhooks hacia IPs internas (proteccion SSRF).
+                // Se espera a que procese el analisis y se consulta el resultado directamente.
+                sleep(time: 15, unit: 'SECONDS')
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Escaneo de vulnerabilidades') {
+            steps {
+                dir(APP_DIR) {
+                    withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+                        // OWASP Dependency-Check: excluye **/target/** (configurado en el pom.xml).
+                        // Si encuentra vulnerabilidades CVSS >= 7 el build queda UNSTABLE (amarillo) con el reporte como evidencia.
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                            sh 'mvn -B dependency-check:check -DnvdApiKey=$NVD_API_KEY'
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    publishHTML(target: [
+                        reportName:  'Reporte Dependency-Check',
+                        reportDir:   "${APP_DIR}/target",
+                        reportFiles: 'dependency-check-report.html',
+                        keepAll: true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing: true
+                    ])
+                    archiveArtifacts artifacts: "${APP_DIR}/target/dependency-check-report.*", allowEmptyArchive: true
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            archiveArtifacts artifacts: "${APP_DIR}/target/*.jar", fingerprint: true
+            echo 'Pipeline frontend OK: compilacion, pruebas, cobertura, calidad y seguridad aprobados.'
+        }
+        unstable {
+            archiveArtifacts artifacts: "${APP_DIR}/target/*.jar", fingerprint: true
+            echo 'Pipeline frontend INESTABLE: revisar el Reporte Dependency-Check.'
+        }
+        failure {
+            echo 'Pipeline frontend FALLO: revisar la etapa marcada en rojo.'
+        }
+    }
+}
