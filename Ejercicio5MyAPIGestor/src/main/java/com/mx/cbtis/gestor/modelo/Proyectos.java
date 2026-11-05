@@ -1,45 +1,65 @@
 package com.mx.cbtis.gestor.modelo;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * Proyecto del gestor.
+ */
 @Entity
 public class Proyectos {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private Integer id_proyecto;
+	@Column(name = "id_proyecto")
+	@JsonProperty("id_proyecto")
+	private Integer idProyecto;
+
 	private String nombre;
+
 	private String descripcion;
-	private String fecha_inicio;
-	private String fecha_finalizacion;
-	private String estado_proyecto;
+
+	@Column(name = "fecha_inicio")
+	@JsonProperty("fecha_inicio")
+	private String fechaInicio;
+
+	@Column(name = "fecha_finalizacion")
+	@JsonProperty("fecha_finalizacion")
+	private String fechaFinalizacion;
+
+	@Column(name = "estado_proyecto")
+	@JsonProperty("estado_proyecto")
+	private String estadoProyecto;
+
 	private String fondo;
-	
+
 	public Proyectos() {
 		super();
 	}
 
-	public Proyectos(Integer id_proyecto, String nombre, String descripcion, String fecha_inicio,
-			String fecha_finalizacion, String estado_proyecto, String fondo) {
+	public Proyectos(Integer idProyecto, String nombre, String descripcion, String fechaInicio,
+			String fechaFinalizacion, String estadoProyecto, String fondo) {
 		super();
-		this.id_proyecto = id_proyecto;
+		this.idProyecto = idProyecto;
 		this.nombre = nombre;
 		this.descripcion = descripcion;
-		this.fecha_inicio = fecha_inicio;
-		this.fecha_finalizacion = fecha_finalizacion;
-		this.estado_proyecto = estado_proyecto;
+		this.fechaInicio = fechaInicio;
+		this.fechaFinalizacion = fechaFinalizacion;
+		this.estadoProyecto = estadoProyecto;
 		this.fondo = fondo;
 	}
 
-	public Integer getId_proyecto() {
-		return id_proyecto;
+	public Integer getIdProyecto() {
+		return idProyecto;
 	}
 
-	public void setId_proyecto(Integer id_proyecto) {
-		this.id_proyecto = id_proyecto;
+	public void setIdProyecto(Integer idProyecto) {
+		this.idProyecto = idProyecto;
 	}
 
 	public String getNombre() {
@@ -58,28 +78,28 @@ public class Proyectos {
 		this.descripcion = descripcion;
 	}
 
-	public String getFecha_inicio() {
-		return fecha_inicio;
+	public String getFechaInicio() {
+		return fechaInicio;
 	}
 
-	public void setFecha_inicio(String fecha_inicio) {
-		this.fecha_inicio = fecha_inicio;
+	public void setFechaInicio(String fechaInicio) {
+		this.fechaInicio = fechaInicio;
 	}
 
-	public String getFecha_finalizacion() {
-		return fecha_finalizacion;
+	public String getFechaFinalizacion() {
+		return fechaFinalizacion;
 	}
 
-	public void setFecha_finalizacion(String fecha_finalizacion) {
-		this.fecha_finalizacion = fecha_finalizacion;
+	public void setFechaFinalizacion(String fechaFinalizacion) {
+		this.fechaFinalizacion = fechaFinalizacion;
 	}
 
-	public String getEstado_proyecto() {
-		return estado_proyecto;
+	public String getEstadoProyecto() {
+		return estadoProyecto;
 	}
 
-	public void setEstado_proyecto(String estado_proyecto) {
-		this.estado_proyecto = estado_proyecto;
+	public void setEstadoProyecto(String estadoProyecto) {
+		this.estadoProyecto = estadoProyecto;
 	}
 
 	public String getFondo() {

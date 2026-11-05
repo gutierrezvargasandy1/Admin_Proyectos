@@ -1,43 +1,63 @@
 package com.mx.cbtis.gestor.modelo;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * Usuario del sistema.
+ * La contrasena se almacena como hash BCrypt y es WRITE_ONLY:
+ * se puede recibir en el JSON de entrada, pero nunca se devuelve en las respuestas.
+ */
 @Entity
 public class Usuario {
-	
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private Integer id_usuario;
+	@Column(name = "id_usuario")
+	@JsonProperty("id_usuario")
+	private Integer idUsuario;
+
 	private String nombre;
-	private String correo_electronico;
+
+	@Column(name = "correo_electronico")
+	@JsonProperty("correo_electronico")
+	private String correoElectronico;
+
+	@JsonProperty(value = "contrasena", access = JsonProperty.Access.WRITE_ONLY)
 	private String contrasena;
+
 	private String rol;
-	private String imagen_usuario;
-	
+
+	@Column(name = "imagen_usuario")
+	@JsonProperty("imagen_usuario")
+	private String imagenUsuario;
+
 	public Usuario() {
 		super();
 	}
 
-	public Usuario(Integer id_usuario, String nombre, String correo_electronico, String contrasena, String rol,
-			String imagen_usuario) {
+	public Usuario(Integer idUsuario, String nombre, String correoElectronico, String contrasena, String rol,
+			String imagenUsuario) {
 		super();
-		this.id_usuario = id_usuario;
+		this.idUsuario = idUsuario;
 		this.nombre = nombre;
-		this.correo_electronico = correo_electronico;
+		this.correoElectronico = correoElectronico;
 		this.contrasena = contrasena;
 		this.rol = rol;
-		this.imagen_usuario = imagen_usuario;
+		this.imagenUsuario = imagenUsuario;
 	}
 
-	public Integer getId_usuario() {
-		return id_usuario;
+	public Integer getIdUsuario() {
+		return idUsuario;
 	}
 
-	public void setId_usuario(Integer id_usuario) {
-		this.id_usuario = id_usuario;
+	public void setIdUsuario(Integer idUsuario) {
+		this.idUsuario = idUsuario;
 	}
 
 	public String getNombre() {
@@ -48,12 +68,12 @@ public class Usuario {
 		this.nombre = nombre;
 	}
 
-	public String getCorreo_electronico() {
-		return correo_electronico;
+	public String getCorreoElectronico() {
+		return correoElectronico;
 	}
 
-	public void setCorreo_electronico(String correo_electronico) {
-		this.correo_electronico = correo_electronico;
+	public void setCorreoElectronico(String correoElectronico) {
+		this.correoElectronico = correoElectronico;
 	}
 
 	public String getContrasena() {
@@ -72,11 +92,11 @@ public class Usuario {
 		this.rol = rol;
 	}
 
-	public String getImagen_usuario() {
-		return imagen_usuario;
+	public String getImagenUsuario() {
+		return imagenUsuario;
 	}
 
-	public void setImagen_usuario(String imagen_usuario) {
-		this.imagen_usuario = imagen_usuario;
+	public void setImagenUsuario(String imagenUsuario) {
+		this.imagenUsuario = imagenUsuario;
 	}
 }

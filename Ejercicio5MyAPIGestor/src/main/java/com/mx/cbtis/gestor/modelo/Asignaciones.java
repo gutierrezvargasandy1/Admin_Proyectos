@@ -1,61 +1,81 @@
 package com.mx.cbtis.gestor.modelo;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * Asignacion de una tarea a un usuario.
+ * Los atributos usan camelCase (convencion Java) y se mapean explicitamente
+ * a las columnas de la BD (@Column) y a las llaves del JSON (@JsonProperty)
+ * para no romper el contrato con el frontend.
+ */
 @Entity
 public class Asignaciones {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private Integer id_asignacion;
-	private Integer id_usuario;
-	private Integer id_tarea;
-	private String fecha_asignacion;
-	
+	@Column(name = "id_asignacion")
+	@JsonProperty("id_asignacion")
+	private Integer idAsignacion;
+
+	@Column(name = "id_usuario")
+	@JsonProperty("id_usuario")
+	private Integer idUsuario;
+
+	@Column(name = "id_tarea")
+	@JsonProperty("id_tarea")
+	private Integer idTarea;
+
+	@Column(name = "fecha_asignacion")
+	@JsonProperty("fecha_asignacion")
+	private String fechaAsignacion;
+
 	public Asignaciones() {
 		super();
 	}
 
-	public Asignaciones(Integer id_asignacion, Integer id_usuario, Integer id_tarea, String fecha_asignacion) {
+	public Asignaciones(Integer idAsignacion, Integer idUsuario, Integer idTarea, String fechaAsignacion) {
 		super();
-		this.id_asignacion = id_asignacion;
-		this.id_usuario = id_usuario;
-		this.id_tarea = id_tarea;
-		this.fecha_asignacion = fecha_asignacion;
+		this.idAsignacion = idAsignacion;
+		this.idUsuario = idUsuario;
+		this.idTarea = idTarea;
+		this.fechaAsignacion = fechaAsignacion;
 	}
 
-	public Integer getId_asignacion() {
-		return id_asignacion;
+	public Integer getIdAsignacion() {
+		return idAsignacion;
 	}
 
-	public void setId_asignacion(Integer id_asignacion) {
-		this.id_asignacion = id_asignacion;
+	public void setIdAsignacion(Integer idAsignacion) {
+		this.idAsignacion = idAsignacion;
 	}
 
-	public Integer getId_usuario() {
-		return id_usuario;
+	public Integer getIdUsuario() {
+		return idUsuario;
 	}
 
-	public void setId_usuario(Integer id_usuario) {
-		this.id_usuario = id_usuario;
+	public void setIdUsuario(Integer idUsuario) {
+		this.idUsuario = idUsuario;
 	}
 
-	public Integer getId_tarea() {
-		return id_tarea;
+	public Integer getIdTarea() {
+		return idTarea;
 	}
 
-	public void setId_tarea(Integer id_tarea) {
-		this.id_tarea = id_tarea;
+	public void setIdTarea(Integer idTarea) {
+		this.idTarea = idTarea;
 	}
 
-	public String getFecha_asignacion() {
-		return fecha_asignacion;
+	public String getFechaAsignacion() {
+		return fechaAsignacion;
 	}
 
-	public void setFecha_asignacion(String fecha_asignacion) {
-		this.fecha_asignacion = fecha_asignacion;
+	public void setFechaAsignacion(String fechaAsignacion) {
+		this.fechaAsignacion = fechaAsignacion;
 	}
 }

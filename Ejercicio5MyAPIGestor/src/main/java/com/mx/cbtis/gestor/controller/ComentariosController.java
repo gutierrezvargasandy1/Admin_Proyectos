@@ -2,9 +2,7 @@ package com.mx.cbtis.gestor.controller;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,71 +15,57 @@ import com.mx.cbtis.gestor.repository.ComentariosRepository;
 
 @RestController
 public class ComentariosController {
-	
-	@Autowired
-	ComentariosRepository comentariostable;
-	
-	@PostMapping("/getComentario")
 
-	public List<Comentarios> getComentario(@RequestBody Comentarios idComentario){
-		List<Comentarios> listaComentarios = comentariostable.findByTarea(idComentario.getId_tarea());
-		return listaComentarios;
+	private final ComentariosRepository comentariosRepository;
+
+	public ComentariosController(ComentariosRepository comentariosRepository) {
+		this.comentariosRepository = comentariosRepository;
 	}
-	
+
+	@PostMapping("/getComentario")
+	public List<Comentarios> getComentariosPorTarea(@RequestBody Comentarios filtro) {
+		if (filtro == null || filtro.getIdTarea() == null) {
+			return new ArrayList<>();
+		}
+		return comentariosRepository.findByIdTarea(filtro.getIdTarea());
+	}
+
 	@GetMapping("/buscarComentario")
 	public Comentarios getComentario(@RequestParam int id) {
-		
-		Comentarios buscar = new Comentarios();
-		Optional<Comentarios> comentario = comentariostable.findById(id);
-		if(comentario.isPresent()) {
-			buscar = comentario.get();
-		}
-		
-		return buscar;
+		return comentariosRepository.findById(id).orElseGet(Comentarios::new);
 	}
-	
+
 	@PostMapping("/addComentario")
 	public int addComentario(@RequestBody Comentarios comentario) {
-		
-		int flag = 0;
-		if(!comentario.equals(null)) {
-			comentariostable.save(comentario);
-			flag = 1;
-		}
-		
-		return flag;
+		return guardar(comentario);
 	}
-	
+
 	@PostMapping("/updateComentario")
 	public int updateComentario(@RequestBody Comentarios comentario) {
-		
-		int flag = 0;
-		if(!comentario.equals(null)) {
-			comentariostable.save(comentario);
-			flag = 1;
-		}
-		
-		return flag;
+		return guardar(comentario);
 	}
-	
+
 	@DeleteMapping("/deleteComentario")
 	public int deleteComentario(@RequestBody Comentarios comentario) {
-		
-		int flag = 0;
-		if(!comentario.equals(null)) {
-			comentariostable.delete(comentario);
-			flag = 1;
+		if (comentario == null) {
+			return RespuestaApi.FALLO;
 		}
-		
-		return flag;
+		comentariosRepository.delete(comentario);
+		return RespuestaApi.EXITO;
 	}
-	
+
 	@PostMapping("/buscarComentarios")
-	public List<Comentarios> getComentarios(){
-		
+	public List<Comentarios> getComentarios() {
 		List<Comentarios> listaComentarios = new ArrayList<>();
-		comentariostable.findAll().forEach(listaComentarios :: add);
+		comentariosRepository.findAll().forEach(listaComentarios::add);
 		return listaComentarios;
 	}
 
+	private int guardar(Comentarios comentario) {
+		if (comentario == null) {
+			return RespuestaApi.FALLO;
+		}
+		comentariosRepository.save(comentario);
+		return RespuestaApi.EXITO;
+	}
 }

@@ -26,6 +26,7 @@
         <jacoco.version>0.8.12</jacoco.version>
         <surefire.version>3.2.5</surefire.version>
         <sonar.plugin.version>5.5.0.6356</sonar.plugin.version>
+        <dependency-check.version>12.1.0</dependency-check.version>
 
         <!-- Configuracion de SonarQube -->
         <sonar.projectKey>gestor-api</sonar.projectKey>
@@ -45,6 +46,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- NUEVO: solo el modulo de cifrado (BCrypt), no activa Spring Security web -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
@@ -57,7 +64,7 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- NUEVO: BD en memoria para pruebas (no depende de MariaDB) -->
+        <!-- BD en memoria para pruebas (no depende de MariaDB) -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -104,6 +111,38 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
+                    <!-- NUEVO: el build FALLA si la cobertura baja del minimo -->
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>METHOD</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>1.00</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.95</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.90</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -112,6 +151,39 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire.version}</version>
+                <configuration>
+                    <!-- @{argLine} conserva el agente de JaCoCo; el flag permite a Byte Buddy (Mockito) trabajar con clases de Java 21 -->
+                    <argLine>@{argLine} -Dnet.bytebuddy.experimental=true</argLine>
+                </configuration>
+            </plugin>
+
+            <!-- NUEVO: escaneo de vulnerabilidades en dependencias (OWASP Dependency-Check) -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>${dependency-check.version}</version>
+                <configuration>
+                    <formats>
+                        <format>HTML</format>
+                        <format>JSON</format>
+                        <format>XML</format>
+                    </formats>
+                    <!-- Falla si hay vulnerabilidades de severidad ALTA o CRITICA (CVSS >= 7) -->
+                    <failBuildOnCVSS>7</failBuildOnCVSS>
+                    <skipTestScope>true</skipTestScope>
+                    <!-- Analizadores que requieren servicios externos con cuenta o herramientas no instaladas -->
+                    <ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
+                    <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                    <!-- Analiza los archivos del proyecto EXCLUYENDO las carpetas target -->
+                    <scanSet>
+                        <fileSet>
+                            <directory>${project.basedir}</directory>
+                            <excludes>
+                                <exclude>**/target/**</exclude>
+                            </excludes>
+                        </fileSet>
+                    </scanSet>
+                </configuration>
             </plugin>
         </plugins>
     </build>

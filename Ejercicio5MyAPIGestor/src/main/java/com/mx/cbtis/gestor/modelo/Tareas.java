@@ -1,45 +1,63 @@
 package com.mx.cbtis.gestor.modelo;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * Tarea perteneciente a un proyecto.
+ */
 @Entity
 public class Tareas {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	private Integer id_tarea;
+	@Column(name = "id_tarea")
+	@JsonProperty("id_tarea")
+	private Integer idTarea;
+
 	private String nombre;
+
 	private String descripcion;
-	private String fecha_vencimiento;
+
+	@Column(name = "fecha_vencimiento")
+	@JsonProperty("fecha_vencimiento")
+	private String fechaVencimiento;
+
 	private String lista;
+
 	private String estado;
-	private Integer id_proyecto;
+
+	@Column(name = "id_proyecto")
+	@JsonProperty("id_proyecto")
+	private Integer idProyecto;
 
 	public Tareas() {
 		super();
 	}
 
-	public Tareas(Integer id_tarea, String nombre, String descripcion, String fecha_vencimiento, String lista,
-			String estado, Integer id_proyecto) {
+	public Tareas(Integer idTarea, String nombre, String descripcion, String fechaVencimiento, String lista,
+			String estado, Integer idProyecto) {
 		super();
-		this.id_tarea = id_tarea;
+		this.idTarea = idTarea;
 		this.nombre = nombre;
 		this.descripcion = descripcion;
-		this.fecha_vencimiento = fecha_vencimiento;
+		this.fechaVencimiento = fechaVencimiento;
 		this.lista = lista;
 		this.estado = estado;
-		this.id_proyecto = id_proyecto;
+		this.idProyecto = idProyecto;
 	}
 
-	public Integer getId_tarea() {
-		return id_tarea;
+	public Integer getIdTarea() {
+		return idTarea;
 	}
 
-	public void setId_tarea(Integer id_tarea) {
-		this.id_tarea = id_tarea;
+	public void setIdTarea(Integer idTarea) {
+		this.idTarea = idTarea;
 	}
 
 	public String getNombre() {
@@ -58,12 +76,12 @@ public class Tareas {
 		this.descripcion = descripcion;
 	}
 
-	public String getFecha_vencimiento() {
-		return fecha_vencimiento;
+	public String getFechaVencimiento() {
+		return fechaVencimiento;
 	}
 
-	public void setFecha_vencimiento(String fecha_vencimiento) {
-		this.fecha_vencimiento = fecha_vencimiento;
+	public void setFechaVencimiento(String fechaVencimiento) {
+		this.fechaVencimiento = fechaVencimiento;
 	}
 
 	public String getLista() {
@@ -82,11 +100,11 @@ public class Tareas {
 		this.estado = estado;
 	}
 
-	public Integer getId_proyecto() {
-		return id_proyecto;
+	public Integer getIdProyecto() {
+		return idProyecto;
 	}
 
-	public void setId_proyecto(Integer id_proyecto) {
-		this.id_proyecto = id_proyecto;
+	public void setIdProyecto(Integer idProyecto) {
+		this.idProyecto = idProyecto;
 	}
 }
