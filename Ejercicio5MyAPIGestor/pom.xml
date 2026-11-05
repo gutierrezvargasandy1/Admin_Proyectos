@@ -28,6 +28,13 @@
         <sonar.plugin.version>5.5.0.6356</sonar.plugin.version>
         <dependency-check.version>12.1.0</dependency-check.version>
 
+        <!-- ATENCION DE VULNERABILIDADES (Dependency-Check): versiones parchadas de librerias
+             transitivas, compatibles con Spring Boot 2.7 (sin cambiar la version de Spring Boot) -->
+        <tomcat.version>9.0.121</tomcat.version>                  <!-- 55 CVE de Tomcat 9.0.82 -->
+        <spring-framework.version>5.3.39</spring-framework.version> <!-- ultima 5.3 publica: CVE-2024-22259, CVE-2024-38808 -->
+        <snakeyaml.version>2.2</snakeyaml.version>                <!-- CVE-2022-1471 (9.8) y 6 mas -->
+        <logback.version>1.2.13</logback.version>                 <!-- CVE-2023-6378, CVE-2023-6481 -->
+
         <!-- Configuracion de SonarQube -->
         <sonar.projectKey>gestor-api</sonar.projectKey>
         <sonar.projectName>Gestor de Proyectos - API (Backend)</sonar.projectName>
@@ -170,6 +177,8 @@
                     </formats>
                     <!-- Falla si hay vulnerabilidades de severidad ALTA o CRITICA (CVSS >= 7) -->
                     <failBuildOnCVSS>7</failBuildOnCVSS>
+                    <!-- CVE clasificadas como NO APLICABLES / falsos positivos, cada una con su justificacion -->
+                    <suppressionFile>${project.basedir}/dependency-check-suppressions.xml</suppressionFile>
                     <skipTestScope>true</skipTestScope>
                     <!-- Analizadores que requieren servicios externos con cuenta o herramientas no instaladas -->
                     <ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
