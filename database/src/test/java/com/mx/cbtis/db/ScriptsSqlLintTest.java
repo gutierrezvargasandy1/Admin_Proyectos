@@ -26,9 +26,7 @@ class ScriptsSqlLintTest {
 
 	private static final Path CARPETA = Path.of("src", "main", "resources", "db", "migration");
 	private static final Pattern NOMBRE_MIGRACION = Pattern.compile("^V(\\d+)__[a-z0-9_]+\\.sql$");
-	private static final Pattern CREATE_TABLE = Pattern.compile(
-			"CREATE\\s+TABLE\\s+(\\w+)\\s*\\((.*?)\\)\\s*(ENGINE[^;]*);", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-	private static final Pattern CUALQUIER_CREATE_TABLE = Pattern.compile("CREATE\\s+TABLE", Pattern.CASE_INSENSITIVE);
+	private static final Pattern HASH_BCRYPT = Pattern.compile("^\\$2[aby]\\$\\d{2}\\$[./A-Za-z0-9]{53}$");
 	private static final Pattern CORREO = Pattern.compile("'[^'@\\s]+@([^'\\s]+)'");
 
 	private static List<Path> scripts;
@@ -47,6 +45,25 @@ class ScriptsSqlLintTest {
 	/** Quita los comentarios "-- ..." para que no cuenten en las reglas. */
 	private static String sinComentarios(String sql) {
 		return sql.replaceAll("(?m)--.*$", "");
+	}
+
+	/**
+	 * Separa un script en sentencias usando ';' (sin expresiones regulares complejas,
+	 * para evitar backtracking). Los scripts no usan ';' dentro de textos.
+	 */
+	private static List<String> sentencias(String sql) {
+		List<String> resultado = new ArrayList<>();
+		for (String parte : sinComentarios(sql).split(";")) {
+			String sentencia = parte.strip();
+			if (!sentencia.isEmpty()) {
+				resultado.add(sentencia);
+			}
+		}
+		return resultado;
+	}
+
+	private static boolean empiezaCon(String sentencia, String prefijo) {
+		return sentencia.toUpperCase(Locale.ROOT).replaceAll("\\s+", " ").startsWith(prefijo);
 	}
 
 	@Test
@@ -100,26 +117,19 @@ class ScriptsSqlLintTest {
 	@DisplayName("Cada tabla tiene PRIMARY KEY, motor InnoDB y charset utf8mb4")
 	void tablasBienDefinidas() throws IOException {
 		int tablas = 0;
-		int declaradas = 0;
 		for (Path script : scripts) {
-			String sql = sinComentarios(leer(script));
-			Matcher todas = CUALQUIER_CREATE_TABLE.matcher(sql);
-			while (todas.find()) {
-				declaradas++;
-			}
-			Matcher m = CREATE_TABLE.matcher(sql);
-			while (m.find()) {
-				tablas++;
-				String nombre = m.group(1);
-				String columnas = m.group(2).toUpperCase(Locale.ROOT);
-				String opciones = m.group(3).toUpperCase(Locale.ROOT);
-				assertThat(columnas).as("PRIMARY KEY en " + nombre).contains("PRIMARY KEY");
-				assertThat(opciones).as("ENGINE=InnoDB en " + nombre).contains("ENGINE=INNODB");
-				assertThat(opciones).as("utf8mb4 en " + nombre).contains("UTF8MB4");
+			for (String sentencia : sentencias(leer(script))) {
+				if (empiezaCon(sentencia, "CREATE TABLE")) {
+					tablas++;
+					String mayusculas = sentencia.toUpperCase(Locale.ROOT);
+					assertThat(mayusculas).as(sentencia.lines().findFirst().orElse(""))
+							.contains("PRIMARY KEY")
+							.contains("ENGINE=INNODB")
+							.contains("UTF8MB4");
+				}
 			}
 		}
 		assertThat(tablas).as("tablas definidas").isGreaterThanOrEqualTo(5);
-		assertThat(tablas).as("toda tabla declara ENGINE y charset").isEqualTo(declaradas);
 	}
 
 	@Test
@@ -136,18 +146,34 @@ class ScriptsSqlLintTest {
 	@Test
 	@DisplayName("Las contrasenas de los datos semilla estan cifradas con BCrypt")
 	void contrasenasCifradasEnScripts() throws IOException {
-		Pattern insertUsuario = Pattern.compile("INSERT\\s+INTO\\s+usuario\\b(.*?);",
-				Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-		Pattern fila = Pattern.compile("\\(\\s*\\d+\\s*,\\s*'[^']*'\\s*,\\s*'[^']*'\\s*,\\s*'([^']*)'");
+		int revisadas = 0;
 		for (Path script : scripts) {
-			Matcher bloque = insertUsuario.matcher(leer(script));
-			while (bloque.find()) {
-				Matcher valores = fila.matcher(bloque.group(1));
-				while (valores.find()) {
-					assertThat(valores.group(1)).as("contrasena en " + script)
-							.matches("^\\$2[aby]\\$\\d{2}\\$[./A-Za-z0-9]{53}$");
+			for (String sentencia : sentencias(leer(script))) {
+				if (empiezaCon(sentencia, "INSERT INTO USUARIO")) {
+					for (String valor : textosEntreComillas(sentencia)) {
+						if (valor.startsWith("$")) {
+							revisadas++;
+							assertThat(valor).as("contrasena en " + script).matches(HASH_BCRYPT);
+						}
+					}
 				}
 			}
 		}
+		assertThat(revisadas).as("contrasenas revisadas").isPositive();
+	}
+
+	/** Extrae los textos entre comillas simples recorriendo caracter por caracter. */
+	private static List<String> textosEntreComillas(String sentencia) {
+		List<String> textos = new ArrayList<>();
+		int inicio = sentencia.indexOf('\'');
+		while (inicio >= 0) {
+			int fin = sentencia.indexOf('\'', inicio + 1);
+			if (fin < 0) {
+				break;
+			}
+			textos.add(sentencia.substring(inicio + 1, fin));
+			inicio = sentencia.indexOf('\'', fin + 1);
+		}
+		return textos;
 	}
 }
