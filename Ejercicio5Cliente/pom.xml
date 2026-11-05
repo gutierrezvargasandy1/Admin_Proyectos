@@ -30,7 +30,7 @@
 
         <!-- ATENCION DE VULNERABILIDADES (Dependency-Check): versiones parchadas de librerias
              transitivas, compatibles con Spring Boot 3.2 (sin cambiar la version de Spring Boot) -->
-        <tomcat.version>10.1.58</tomcat.version>                  <!-- 54 CVE de Tomcat 10.1.20 -->
+        <tomcat.version>10.1.61</tomcat.version>        
         <thymeleaf.version>3.1.4.RELEASE</thymeleaf.version>      <!-- CVE-2026-40477 y CVE-2026-40478 (9.0, SSTI) -->
         <spring-framework.version>6.1.14</spring-framework.version> <!-- CVE-2024-38820 -->
 
