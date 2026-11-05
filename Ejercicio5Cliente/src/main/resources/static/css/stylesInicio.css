@@ -8,8 +8,6 @@ body{
 	justify-content: center;
 	flex-wrap: wrap;
 	flex-direction: column;
-	align-items: center;
-	justify-content: center;
 }
 
 
@@ -22,7 +20,7 @@ body{
   color: white;
 }
 
-#guardar{
+#guardar, #guardarEditar{
 	border-radius: 10px;
 	background-color: #483078;
 	color: white;
@@ -50,12 +48,12 @@ body{
 	margin-bottom: 15px;
 }
 
-#imagenes{
+.imagenes{
 	margin: 5px;
 	cursor: pointer;
 }
 
-#fondosTitulos{
+.fondosTitulos{
 	margin-top: 12px;
 	margin-bottom: 2px;
 }

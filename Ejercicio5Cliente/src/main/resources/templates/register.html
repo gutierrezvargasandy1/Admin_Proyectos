@@ -29,8 +29,8 @@
         <form class="p-5 bg-light bg-opacity-75 rounded mt-5 needs-validation" novalidate method="post" th:action="saveUsuario" th:object="${usuario}">
             <h2>Registrate</h2>
             <div class="mb-3">
-                <label class="form-label">Nombre(completo)</label>
-                <input type="text" class="form-control" th:field="*{nombre}" required>
+                <label for="nombre" class="form-label">Nombre (completo)</label>
+                <input type="text" class="form-control" id="nombre" th:field="*{nombre}" required>
               </div>
             <div class="mb-3">
               <label for="exampleInputEmail1" class="form-label">Email</label>
@@ -45,7 +45,7 @@
             </div>
             <div class="mb-3">
               <label for="exampleInputRol1" class="form-label">Rol</label>
-              <select class="form-select" th:field="*{rol}" required>
+              <select class="form-select" id="exampleInputRol1" th:field="*{rol}" required>
 				  <option value="0">Seleccione una opci&oacute;n</option>
 				  <option value="Estudiante">Estudiante</option>
 				  <option value="Docente">Docente</option>

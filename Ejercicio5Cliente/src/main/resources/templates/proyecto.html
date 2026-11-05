@@ -1,4 +1,5 @@
-<html xmlns:th="http://www.thymeleaf.org">
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -6,7 +7,8 @@
     <link rel="icon" th:href="@{Images/icono.ico}">
     <link rel="stylesheet" th:href="@{css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{css/stylesProyecto.css}">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+	      integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
 </head>
 <script th:src="@{js/jquery-3.7.1.min.js}"></script>
 <script th:src="@{js/popper.min.js}"></script>
@@ -82,8 +84,8 @@
 		<!--Usuario-->
 			<hr>
 			<div class="row d-flex">
-				<label id="Nombre" class="mt-0s d-flex justify-content-start">Perla Joceline Martínez Meza</label>
-				<label id="Email" class="mb-3 mt-1s d-flex justify-content-start">perla22522@cbtis75.edu.mx</label>
+				<p id="Nombre" class="mt-0s mb-0 d-flex justify-content-start">Usuario</p>
+				<p id="Email" class="mb-3 mt-1s d-flex justify-content-start">correo@ejemplo.com</p>
 				<div id="imagenUsuario" class="me-2 mt-2 mb-3 rounded-circle d-flex justify-content-end"><p class="fw-bolder fs-1 text-uppercase"><strong class="" id="inicial"></strong></p></div>
 			</div>
 	  </div> 
@@ -110,7 +112,8 @@
 			</div>
 			<div class="mb-3 mt-0">
 			<form >
- 					<input type="text" id="inputTarea" class="form-control mt-0" placeholder="Escribe una nueva tarea">
+ 					<label for="inputTarea" class="visually-hidden">Nueva tarea</label>
+				<input type="text" id="inputTarea" class="form-control mt-0" placeholder="Escribe una nueva tarea">
  					<input type="hidden" id="estado" value="pendientes">
 					<button type="button" id="btnTarea" onclick="validarTarea()" class="btn btn-indigo btn-sm mt-2">guardar</button>
 			</form>
@@ -137,6 +140,7 @@
 			</div>
 			<div class="mb-3 mt-0">
 			<form>
+				<label for="inputTarea2" class="visually-hidden">Nueva tarea</label>
 				<input type="text" id="inputTarea2" class="form-control mt-0" placeholder="Escribe una nueva tarea">
 				<input type="hidden" id="estado2" value="encurso">
 				<button type="button" id="btnTarea2" onclick="validarTarea2()" class="btn btn-indigo btn-sm mt-2">guardar</button>
@@ -163,6 +167,7 @@
 			</div>
 			<div class="mb-3 mt-0">
 			<form>
+				<label for="inputTarea3" class="visually-hidden">Nueva tarea</label>
 				<input type="text" id="inputTarea3" class="form-control mt-0" placeholder="Escribe una nueva tarea">
 				<input type="hidden" id="estado3" value="terminado">
 				<button type="button" id="btnTarea3" onclick="validarTarea3()" class="btn btn-indigo btn-sm mt-2">guardar</button>
@@ -175,18 +180,18 @@
 		
 		
 		<!--modalTresPuntitos de Tareas Pendientes-->
-		<div class="modal modal-sm fade" id="tresPuntitosTP" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal modal-sm fade" id="tresPuntitosTP" tabindex="-1" aria-labelledby="tresPuntitosTPLabel" aria-hidden="true">
 		  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 		    <div class="modal-content">
 		      <div class="modal-header">
-		        <h1 class="modal-title fs-5" id="exampleModalLabel">Editar lista</h1>
+		        <h1 class="modal-title fs-5" id="tresPuntitosTPLabel">Editar lista</h1>
 		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 		      </div>
 		      <div class="modal-body">
 				<form>
 		          <div class="mb-3">
-		            <p for="recipient-name" class="col-form ms-0 mb-2 text-start">Nombre:</p>
-		            <input type="text" class="form-control" id="recipient-name" placeholder="Nuevo nombre de lista">
+		            <label for="nombreListaTP" class="col-form ms-0 mb-2 text-start d-block">Nombre:</label>
+		            <input type="text" class="form-control" id="nombreListaTP" placeholder="Nuevo nombre de lista">
 		          </div>
 		        </form>
 		      </div>
@@ -198,18 +203,18 @@
 		  </div>
 		</div>
 		<!--modalTresPuntitos de En curso-->
-		<div class="modal modal-sm fade" id="tresPuntitosEC" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal modal-sm fade" id="tresPuntitosEC" tabindex="-1" aria-labelledby="tresPuntitosECLabel" aria-hidden="true">
 		  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 		    <div class="modal-content">
 		      <div class="modal-header">
-		        <h1 class="modal-title fs-5" id="exampleModalLabel">Editar lista</h1>
+		        <h1 class="modal-title fs-5" id="tresPuntitosECLabel">Editar lista</h1>
 		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 		      </div>
 		      <div class="modal-body">
 				<form>
 		          <div class="mb-3">
-		            <p for="recipient-name" class="col-form ms-0 mb-2 text-start">Nombre:</p>
-		            <input type="text" class="form-control" id="recipient-name" placeholder="Nuevo nombre de lista">
+		            <label for="nombreListaEC" class="col-form ms-0 mb-2 text-start d-block">Nombre:</label>
+		            <input type="text" class="form-control" id="nombreListaEC" placeholder="Nuevo nombre de lista">
 		          </div>
 		        </form>
 		      </div>
@@ -221,18 +226,18 @@
 		  </div>
 		</div>
 		<!--modalTresPuntitos de Trabajos Terminados-->
-		<div class="modal modal-sm fade" id="tresPuntitosTT" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal modal-sm fade" id="tresPuntitosTT" tabindex="-1" aria-labelledby="tresPuntitosTTLabel" aria-hidden="true">
 		  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 		    <div class="modal-content">
 		      <div class="modal-header">
-		        <h1 class="modal-title fs-5" id="exampleModalLabel">Editar lista</h1>
+		        <h1 class="modal-title fs-5" id="tresPuntitosTTLabel">Editar lista</h1>
 		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 		      </div>
 		      <div class="modal-body">
 				<form>
 		          <div class="mb-3">
-		            <p for="recipient-name" class="col-form ms-0 mb-2 text-start">Nombre:</p>
-		            <input type="text" class="form-control" id="recipient-name" placeholder="Nuevo nombre de lista">
+		            <label for="nombreListaTT" class="col-form ms-0 mb-2 text-start d-block">Nombre:</label>
+		            <input type="text" class="form-control" id="nombreListaTT" placeholder="Nuevo nombre de lista">
 		          </div>
 		        </form>
 		      </div>
@@ -244,21 +249,21 @@
 		  </div>
 		</div>
 		<!--modalTarea-->
-		<div class="modal modal-lg fade" id="editarTarea" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal modal-lg fade" id="editarTarea" tabindex="-1" aria-labelledby="nameTarea" aria-hidden="true">
 		  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 		    <div class="modal-content">
 				<form method="post" th:action="saveTarea" th:object="${tarea}">
 			      <div class="modal-header">
-			        <h1 class="modal-title fs-5" id="nameTarea"></h1>
+			        <h1 class="modal-title fs-5" id="nameTarea">Tarea</h1>
 			        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 			      </div>
 			      <div class="modal-body">
 			        <div class="container text-center">
 					  <div class="row">
 					    <div class="col">
-					      <p class="col-form ms-0 mb-2 text-start"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-justify-left" viewBox="0 0 16 16">
+					      <label for="descripcionT" class="col-form ms-0 mb-2 text-start d-block"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-justify-left" viewBox="0 0 16 16">
 							  <path fill-rule="evenodd" d="M2 12.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m0-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5m0-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5m0-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5"/>
-							</svg> Descripci&oacute;n:</p>
+							</svg> Descripci&oacute;n:</label>
 							
 						  <input type="hidden" id="id_tarea" th:field="*{id_tarea}">
 						  <input type="hidden" id="nombre" th:field="*{nombre}">
@@ -270,7 +275,7 @@
 								  
 								  <div class="form-floating">
 								    <input type="text" class="form-control" id="comentarioT" placeholder="Comentario">
-								    <label for="floatingInputGroup1">Comentario</label>
+								    <label for="comentarioT">Comentario</label>
 								  </div>
 								  
 								  <span class="input-group-text">
@@ -306,6 +311,7 @@
 									</svg>  Miembros</button>
 									-->
 									
+									<label for="etiqueta" class="visually-hidden">Nivel de urgencia</label>
 									<select class="my-2" th:field="*{estado}" id="etiqueta">
 										<option value="0" selected>Selecciona una opci&oacute;n</option>
 										<option value="danger" class="bg-danger text-light">Emergencia</option>
@@ -313,6 +319,8 @@
 										<option value="success" class="bg-success text-light">Urgencia menor</option>
 										<option value="primary" class="bg-primary text-light">Sin urgencia</option>
 									</select>
+									
+								  <label for="inputFechas" class="visually-hidden">Fecha de vencimiento</label>
 									
 								  <button type="button" th:onclick="Fechas()" class="bg-light-subtle m-1 p-2 border border-0" data-bs-toggle="popover" data-bs-placement="right" data-bs-content="Right popover"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock" viewBox="0 0 16 16">
 									  <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
@@ -322,6 +330,7 @@
 								</button>
 								
 								<p class="mt-4"><strong>Acciones</strong></p>
+								<label for="cambiarLista" class="visually-hidden">Cambiar de lista</label>
 								<select th:field="*{lista}" id="cambiarLista">
 									<option value="0" selected>Cambiar de lista</option>
 									<option value="pendientes">Pendientes</option>
@@ -351,21 +360,21 @@
 		  </div>
 		</div>
 		<!--modalEliminar-->
-		<div class="modal modal-sm fade" id="eliminarTarea" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal modal-sm fade" id="eliminarTarea" tabindex="-1" aria-labelledby="eliminarTareaLabel" aria-hidden="true">
 		  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 		    <div class="modal-content">
 		      <div class="modal-header">
-		        <h1 class="modal-title fs-5" id="exampleModalLabel">Eliminar tarea</h1>
+		        <h1 class="modal-title fs-5" id="eliminarTareaLabel">Eliminar tarea</h1>
 		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 		      </div>
 			      <div class="modal-body">
 			          <div class="mb-3">
-			            <p for="recipient-name" class="col-form ms-0 mb-2 text-start">¿Esta seguro que quiere eliminar la tarea ?</p>
+			            <p class="col-form ms-0 mb-2 text-start">¿Esta seguro que quiere eliminar la tarea ?</p>
 			          </div>
 			          <form>
 					      <div>
 					        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-					        <button class="btn btn-danger" th:onclick="eliminarPrestamo(${prestamo.id})">Eliminar</button>
+					        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Eliminar</button>
 				         </div>
 			         </form>
 			      </div>
@@ -386,7 +395,7 @@
 				        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				      </div>
 				      <div class="modal-body">
-				        <label id="textAlerta">¿Esta seguro que sea eliminar la tarea?</label>
+				        <p id="textAlerta" class="mb-0">¿Está seguro que desea eliminar la tarea?</p>
 				        <input id="hiddenId" type="hidden">
 				      </div>
 				      <div class="modal-footer">

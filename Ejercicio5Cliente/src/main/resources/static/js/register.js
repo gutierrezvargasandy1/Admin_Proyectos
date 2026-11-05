@@ -19,12 +19,10 @@ $(document).ready(function(){
 });
 
 function getRandomColor(){
-	const letras = '0123456789ABCDEF';
-	let color = '#';
-	for (let i = 0; i < 6; i++){
-		color += letras[Math.floor(Math.random() * 16)]
-	}
-	
+	// Color de avatar aleatorio. Se usa crypto.getRandomValues (generador seguro) en lugar de Math.random.
+	const valores = new Uint8Array(3);
+	crypto.getRandomValues(valores);
+	const color = '#' + Array.from(valores, v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+
 	document.getElementById("imagenUsuario").value = color;
-	
 }
