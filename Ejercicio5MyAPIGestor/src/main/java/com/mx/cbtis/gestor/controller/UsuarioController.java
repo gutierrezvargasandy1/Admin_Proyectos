@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mx.cbtis.gestor.dto.CredencialesRequest;
+import com.mx.cbtis.gestor.dto.UsuarioRequest;
 import com.mx.cbtis.gestor.modelo.Usuario;
 import com.mx.cbtis.gestor.repository.UsuarioRepository;
 
@@ -30,17 +32,17 @@ public class UsuarioController {
 	}
 
 	@PostMapping("/getUsuarioLogin")
-	public Usuario getUsuarioLogin(@RequestBody Usuario credenciales) {
-		if (credenciales == null || !tieneTexto(credenciales.getCorreoElectronico())
-				|| !tieneTexto(credenciales.getContrasena())) {
+	public Usuario getUsuarioLogin(@RequestBody CredencialesRequest credenciales) {
+		if (credenciales == null || !tieneTexto(credenciales.correoElectronico())
+				|| !tieneTexto(credenciales.contrasena())) {
 			return usuarioNoValido();
 		}
 
 		Optional<Usuario> encontrado = usuarioRepository
-				.findFirstByCorreoElectronico(credenciales.getCorreoElectronico());
+				.findFirstByCorreoElectronico(credenciales.correoElectronico());
 
 		if (encontrado.isPresent()
-				&& passwordEncoder.matches(credenciales.getContrasena(), encontrado.get().getContrasena())) {
+				&& passwordEncoder.matches(credenciales.contrasena(), encontrado.get().getContrasena())) {
 			return encontrado.get();
 		}
 		return usuarioNoValido();
@@ -52,22 +54,24 @@ public class UsuarioController {
 	}
 
 	@PostMapping("/addUsuario")
-	public int addUsuario(@RequestBody Usuario usuario) {
-		if (usuario == null || !tieneTexto(usuario.getContrasena())) {
+	public int addUsuario(@RequestBody UsuarioRequest request) {
+		if (request == null || !tieneTexto(request.contrasena())) {
 			return RespuestaApi.FALLO;
 		}
-		usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
+		Usuario usuario = request.toEntity();
+		usuario.setContrasena(passwordEncoder.encode(request.contrasena()));
 		usuarioRepository.save(usuario);
 		return RespuestaApi.EXITO;
 	}
 
 	@PostMapping("/updateUsuario")
-	public int updateUsuario(@RequestBody Usuario usuario) {
-		if (usuario == null) {
+	public int updateUsuario(@RequestBody UsuarioRequest request) {
+		if (request == null) {
 			return RespuestaApi.FALLO;
 		}
-		if (tieneTexto(usuario.getContrasena())) {
-			usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
+		Usuario usuario = request.toEntity();
+		if (tieneTexto(request.contrasena())) {
+			usuario.setContrasena(passwordEncoder.encode(request.contrasena()));
 		} else {
 			conservarContrasenaActual(usuario);
 		}
@@ -76,11 +80,11 @@ public class UsuarioController {
 	}
 
 	@DeleteMapping("/deleteUsuario")
-	public int deleteUsuario(@RequestBody Usuario usuario) {
-		if (usuario == null) {
+	public int deleteUsuario(@RequestBody UsuarioRequest request) {
+		if (request == null || request.idUsuario() == null || !usuarioRepository.existsById(request.idUsuario())) {
 			return RespuestaApi.FALLO;
 		}
-		usuarioRepository.delete(usuario);
+		usuarioRepository.deleteById(request.idUsuario());
 		return RespuestaApi.EXITO;
 	}
 

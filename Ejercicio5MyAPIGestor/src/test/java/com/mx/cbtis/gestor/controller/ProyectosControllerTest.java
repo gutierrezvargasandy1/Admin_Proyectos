@@ -14,9 +14,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.mx.cbtis.gestor.dto.ProyectoRequest;
 import com.mx.cbtis.gestor.modelo.Proyectos;
 import com.mx.cbtis.gestor.repository.ProyectosRepository;
 
@@ -41,6 +43,14 @@ class ProyectosControllerTest {
 		return new Proyectos(5, "My API Rest", "API con 5 tablas", "2026-01-15", "2026-06-30", "En proceso", "/Images/animacion1.gif");
 	}
 
+	private static ProyectoRequest peticion() {
+		return new ProyectoRequest(5, "My API Rest", "API con 5 tablas", "2026-01-15", "2026-06-30", "En proceso", "/Images/animacion1.gif");
+	}
+
+	private static ProyectoRequest peticionSinId() {
+		return new ProyectoRequest(null, "My API Rest", "API con 5 tablas", "2026-01-15", "2026-06-30", "En proceso", "/Images/animacion1.gif");
+	}
+
 	@Test
 	@DisplayName("Buscar por id: regresa el registro cuando existe")
 	void buscarPorIdExistente() {
@@ -50,7 +60,6 @@ class ProyectosControllerTest {
 		Proyectos resultado = controller.getProyecto(5);
 
 		assertThat(resultado).isSameAs(esperado);
-		assertThat(resultado.getIdProyecto()).isEqualTo(5);
 	}
 
 	@Test
@@ -65,12 +74,14 @@ class ProyectosControllerTest {
 	}
 
 	@Test
-	@DisplayName("Alta: guarda el registro y regresa 1")
+	@DisplayName("Alta: convierte el DTO a entidad con TODOS sus campos, guarda y regresa 1")
 	void altaExitosa() {
-		Proyectos nuevo = muestra();
+		ArgumentCaptor<Proyectos> captor = ArgumentCaptor.forClass(Proyectos.class);
 
-		assertThat(controller.addProyecto(nuevo)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).save(nuevo);
+		assertThat(controller.addProyecto(peticion())).isEqualTo(RespuestaApi.EXITO);
+
+		verify(repository).save(captor.capture());
+		assertThat(captor.getValue()).usingRecursiveComparison().isEqualTo(muestra());
 	}
 
 	@Test
@@ -81,12 +92,14 @@ class ProyectosControllerTest {
 	}
 
 	@Test
-	@DisplayName("Actualizacion: guarda el registro y regresa 1")
+	@DisplayName("Actualizacion: convierte el DTO a entidad, guarda y regresa 1")
 	void actualizacionExitosa() {
-		Proyectos existente = muestra();
+		ArgumentCaptor<Proyectos> captor = ArgumentCaptor.forClass(Proyectos.class);
 
-		assertThat(controller.updateProyecto(existente)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).save(existente);
+		assertThat(controller.updateProyecto(peticion())).isEqualTo(RespuestaApi.EXITO);
+
+		verify(repository).save(captor.capture());
+		assertThat(captor.getValue().getIdProyecto()).isEqualTo(5);
 	}
 
 	@Test
@@ -97,19 +110,35 @@ class ProyectosControllerTest {
 	}
 
 	@Test
-	@DisplayName("Baja: elimina el registro y regresa 1")
+	@DisplayName("Baja: si el registro existe lo elimina por id y regresa 1")
 	void bajaExitosa() {
-		Proyectos existente = muestra();
+		when(repository.existsById(5)).thenReturn(true);
 
-		assertThat(controller.deleteProyecto(existente)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).delete(existente);
+		assertThat(controller.deleteProyecto(peticion())).isEqualTo(RespuestaApi.EXITO);
+		verify(repository).deleteById(5);
 	}
 
 	@Test
-	@DisplayName("Baja: con cuerpo nulo NO elimina y regresa 0")
+	@DisplayName("Baja: si el registro NO existe regresa 0 y no elimina")
+	void bajaInexistente() {
+		when(repository.existsById(5)).thenReturn(false);
+
+		assertThat(controller.deleteProyecto(peticion())).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).deleteById(any());
+	}
+
+	@Test
+	@DisplayName("Baja: sin id regresa 0 sin consultar la BD")
+	void bajaSinId() {
+		assertThat(controller.deleteProyecto(peticionSinId())).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).existsById(any());
+	}
+
+	@Test
+	@DisplayName("Baja: con cuerpo nulo regresa 0")
 	void bajaNula() {
 		assertThat(controller.deleteProyecto(null)).isEqualTo(RespuestaApi.FALLO);
-		verify(repository, never()).delete(any());
+		verify(repository, never()).deleteById(any());
 	}
 
 	@Test
@@ -119,9 +148,7 @@ class ProyectosControllerTest {
 		Proyectos segundo = new Proyectos();
 		when(repository.findAll()).thenReturn(List.of(primero, segundo));
 
-		List<Proyectos> resultado = controller.getProyectos();
-
-		assertThat(resultado).containsExactly(primero, segundo);
+		assertThat(controller.getProyectos()).containsExactly(primero, segundo);
 	}
 
 	@Test

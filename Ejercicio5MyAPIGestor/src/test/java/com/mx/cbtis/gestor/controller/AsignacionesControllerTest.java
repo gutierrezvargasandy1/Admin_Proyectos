@@ -14,9 +14,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.mx.cbtis.gestor.dto.AsignacionRequest;
 import com.mx.cbtis.gestor.modelo.Asignaciones;
 import com.mx.cbtis.gestor.repository.AsignacionesRepository;
 
@@ -41,6 +43,14 @@ class AsignacionesControllerTest {
 		return new Asignaciones(5, 1, 7, "2026-11-05");
 	}
 
+	private static AsignacionRequest peticion() {
+		return new AsignacionRequest(5, 1, 7, "2026-11-05");
+	}
+
+	private static AsignacionRequest peticionSinId() {
+		return new AsignacionRequest(null, 1, 7, "2026-11-05");
+	}
+
 	@Test
 	@DisplayName("Buscar por id: regresa el registro cuando existe")
 	void buscarPorIdExistente() {
@@ -50,7 +60,6 @@ class AsignacionesControllerTest {
 		Asignaciones resultado = controller.getAsignacion(5);
 
 		assertThat(resultado).isSameAs(esperado);
-		assertThat(resultado.getIdAsignacion()).isEqualTo(5);
 	}
 
 	@Test
@@ -65,12 +74,14 @@ class AsignacionesControllerTest {
 	}
 
 	@Test
-	@DisplayName("Alta: guarda el registro y regresa 1")
+	@DisplayName("Alta: convierte el DTO a entidad con TODOS sus campos, guarda y regresa 1")
 	void altaExitosa() {
-		Asignaciones nuevo = muestra();
+		ArgumentCaptor<Asignaciones> captor = ArgumentCaptor.forClass(Asignaciones.class);
 
-		assertThat(controller.addAsignacion(nuevo)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).save(nuevo);
+		assertThat(controller.addAsignacion(peticion())).isEqualTo(RespuestaApi.EXITO);
+
+		verify(repository).save(captor.capture());
+		assertThat(captor.getValue()).usingRecursiveComparison().isEqualTo(muestra());
 	}
 
 	@Test
@@ -81,12 +92,14 @@ class AsignacionesControllerTest {
 	}
 
 	@Test
-	@DisplayName("Actualizacion: guarda el registro y regresa 1")
+	@DisplayName("Actualizacion: convierte el DTO a entidad, guarda y regresa 1")
 	void actualizacionExitosa() {
-		Asignaciones existente = muestra();
+		ArgumentCaptor<Asignaciones> captor = ArgumentCaptor.forClass(Asignaciones.class);
 
-		assertThat(controller.updateAsignacion(existente)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).save(existente);
+		assertThat(controller.updateAsignacion(peticion())).isEqualTo(RespuestaApi.EXITO);
+
+		verify(repository).save(captor.capture());
+		assertThat(captor.getValue().getIdAsignacion()).isEqualTo(5);
 	}
 
 	@Test
@@ -97,19 +110,35 @@ class AsignacionesControllerTest {
 	}
 
 	@Test
-	@DisplayName("Baja: elimina el registro y regresa 1")
+	@DisplayName("Baja: si el registro existe lo elimina por id y regresa 1")
 	void bajaExitosa() {
-		Asignaciones existente = muestra();
+		when(repository.existsById(5)).thenReturn(true);
 
-		assertThat(controller.deleteAsignacion(existente)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).delete(existente);
+		assertThat(controller.deleteAsignacion(peticion())).isEqualTo(RespuestaApi.EXITO);
+		verify(repository).deleteById(5);
 	}
 
 	@Test
-	@DisplayName("Baja: con cuerpo nulo NO elimina y regresa 0")
+	@DisplayName("Baja: si el registro NO existe regresa 0 y no elimina")
+	void bajaInexistente() {
+		when(repository.existsById(5)).thenReturn(false);
+
+		assertThat(controller.deleteAsignacion(peticion())).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).deleteById(any());
+	}
+
+	@Test
+	@DisplayName("Baja: sin id regresa 0 sin consultar la BD")
+	void bajaSinId() {
+		assertThat(controller.deleteAsignacion(peticionSinId())).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).existsById(any());
+	}
+
+	@Test
+	@DisplayName("Baja: con cuerpo nulo regresa 0")
 	void bajaNula() {
 		assertThat(controller.deleteAsignacion(null)).isEqualTo(RespuestaApi.FALLO);
-		verify(repository, never()).delete(any());
+		verify(repository, never()).deleteById(any());
 	}
 
 	@Test
@@ -119,9 +148,7 @@ class AsignacionesControllerTest {
 		Asignaciones segundo = new Asignaciones();
 		when(repository.findAll()).thenReturn(List.of(primero, segundo));
 
-		List<Asignaciones> resultado = controller.getAsignaciones();
-
-		assertThat(resultado).containsExactly(primero, segundo);
+		assertThat(controller.getAsignaciones()).containsExactly(primero, segundo);
 	}
 
 	@Test

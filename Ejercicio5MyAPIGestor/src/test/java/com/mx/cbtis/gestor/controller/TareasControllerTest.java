@@ -14,9 +14,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.mx.cbtis.gestor.dto.FiltroProyectoRequest;
+import com.mx.cbtis.gestor.dto.TareaRequest;
 import com.mx.cbtis.gestor.modelo.Tareas;
 import com.mx.cbtis.gestor.repository.TareasRepository;
 
@@ -41,6 +44,14 @@ class TareasControllerTest {
 		return new Tareas(5, "Base de datos", "Estructura de tablas", "2026-06-13", "pendiente", "danger", 7);
 	}
 
+	private static TareaRequest peticion() {
+		return new TareaRequest(5, "Base de datos", "Estructura de tablas", "2026-06-13", "pendiente", "danger", 7);
+	}
+
+	private static TareaRequest peticionSinId() {
+		return new TareaRequest(null, "Base de datos", "Estructura de tablas", "2026-06-13", "pendiente", "danger", 7);
+	}
+
 	@Test
 	@DisplayName("Buscar por id: regresa el registro cuando existe")
 	void buscarPorIdExistente() {
@@ -50,7 +61,6 @@ class TareasControllerTest {
 		Tareas resultado = controller.getTarea(5);
 
 		assertThat(resultado).isSameAs(esperado);
-		assertThat(resultado.getIdTarea()).isEqualTo(5);
 	}
 
 	@Test
@@ -65,12 +75,14 @@ class TareasControllerTest {
 	}
 
 	@Test
-	@DisplayName("Alta: guarda el registro y regresa 1")
+	@DisplayName("Alta: convierte el DTO a entidad con TODOS sus campos, guarda y regresa 1")
 	void altaExitosa() {
-		Tareas nuevo = muestra();
+		ArgumentCaptor<Tareas> captor = ArgumentCaptor.forClass(Tareas.class);
 
-		assertThat(controller.addTareas(nuevo)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).save(nuevo);
+		assertThat(controller.addTareas(peticion())).isEqualTo(RespuestaApi.EXITO);
+
+		verify(repository).save(captor.capture());
+		assertThat(captor.getValue()).usingRecursiveComparison().isEqualTo(muestra());
 	}
 
 	@Test
@@ -81,12 +93,14 @@ class TareasControllerTest {
 	}
 
 	@Test
-	@DisplayName("Actualizacion: guarda el registro y regresa 1")
+	@DisplayName("Actualizacion: convierte el DTO a entidad, guarda y regresa 1")
 	void actualizacionExitosa() {
-		Tareas existente = muestra();
+		ArgumentCaptor<Tareas> captor = ArgumentCaptor.forClass(Tareas.class);
 
-		assertThat(controller.updateTareas(existente)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).save(existente);
+		assertThat(controller.updateTareas(peticion())).isEqualTo(RespuestaApi.EXITO);
+
+		verify(repository).save(captor.capture());
+		assertThat(captor.getValue().getIdTarea()).isEqualTo(5);
 	}
 
 	@Test
@@ -97,19 +111,35 @@ class TareasControllerTest {
 	}
 
 	@Test
-	@DisplayName("Baja: elimina el registro y regresa 1")
+	@DisplayName("Baja: si el registro existe lo elimina por id y regresa 1")
 	void bajaExitosa() {
-		Tareas existente = muestra();
+		when(repository.existsById(5)).thenReturn(true);
 
-		assertThat(controller.deleteTareas(existente)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).delete(existente);
+		assertThat(controller.deleteTareas(peticion())).isEqualTo(RespuestaApi.EXITO);
+		verify(repository).deleteById(5);
 	}
 
 	@Test
-	@DisplayName("Baja: con cuerpo nulo NO elimina y regresa 0")
+	@DisplayName("Baja: si el registro NO existe regresa 0 y no elimina")
+	void bajaInexistente() {
+		when(repository.existsById(5)).thenReturn(false);
+
+		assertThat(controller.deleteTareas(peticion())).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).deleteById(any());
+	}
+
+	@Test
+	@DisplayName("Baja: sin id regresa 0 sin consultar la BD")
+	void bajaSinId() {
+		assertThat(controller.deleteTareas(peticionSinId())).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).existsById(any());
+	}
+
+	@Test
+	@DisplayName("Baja: con cuerpo nulo regresa 0")
 	void bajaNula() {
 		assertThat(controller.deleteTareas(null)).isEqualTo(RespuestaApi.FALLO);
-		verify(repository, never()).delete(any());
+		verify(repository, never()).deleteById(any());
 	}
 
 	@Test
@@ -119,9 +149,7 @@ class TareasControllerTest {
 		Tareas segundo = new Tareas();
 		when(repository.findAll()).thenReturn(List.of(primero, segundo));
 
-		List<Tareas> resultado = controller.getTareas();
-
-		assertThat(resultado).containsExactly(primero, segundo);
+		assertThat(controller.getTareas()).containsExactly(primero, segundo);
 	}
 
 	@Test
@@ -135,18 +163,16 @@ class TareasControllerTest {
 	@Test
 	@DisplayName("Filtro por proyecto: regresa los registros relacionados")
 	void filtroConDatos() {
-		Tareas filtro = new Tareas();
-		filtro.setIdProyecto(7);
 		List<Tareas> esperados = List.of(muestra());
 		when(repository.findByIdProyecto(7)).thenReturn(esperados);
 
-		assertThat(controller.getTareasPorProyecto(filtro)).isEqualTo(esperados);
+		assertThat(controller.getTareasPorProyecto(new FiltroProyectoRequest(7))).isEqualTo(esperados);
 	}
 
 	@Test
 	@DisplayName("Filtro por proyecto: sin proyecto regresa lista vacia y no consulta la BD")
 	void filtroSinLlave() {
-		assertThat(controller.getTareasPorProyecto(new Tareas())).isEmpty();
+		assertThat(controller.getTareasPorProyecto(new FiltroProyectoRequest(null))).isEmpty();
 		verify(repository, never()).findByIdProyecto(any());
 	}
 

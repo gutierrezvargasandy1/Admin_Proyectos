@@ -136,15 +136,29 @@ class ApiWebMvcTest {
 	}
 
 	@Test
-	@DisplayName("DELETE /deleteComentario regresa 1")
+	@DisplayName("DELETE /deleteComentario de un comentario existente regresa 1")
 	void bajaComentario() throws Exception {
+		when(comentariosRepository.existsById(201)).thenReturn(true);
+
 		mockMvc.perform(delete("/deleteComentario")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"id_comentario\":201}"))
+				.content("{\"id_comentario\":201,\"texto_comentario\":\"Subirlo YA\"}"))
 				.andExpect(status().isOk())
 				.andExpect(content().string("1"));
 
-		verify(comentariosRepository).delete(any(Comentarios.class));
+		verify(comentariosRepository).deleteById(201);
+	}
+
+	@Test
+	@DisplayName("POST /addTareas ignora campos que no pertenecen al DTO (proteccion mass assignment)")
+	void altaTareaIgnoraCamposExtra() throws Exception {
+		mockMvc.perform(post("/addTareas")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nombre\":\"BD\",\"id_proyecto\":197,\"campoInventado\":\"x\"}"))
+				.andExpect(status().isOk())
+				.andExpect(content().string("1"));
+
+		verify(tareasRepository).save(any(Tareas.class));
 	}
 
 	@Test

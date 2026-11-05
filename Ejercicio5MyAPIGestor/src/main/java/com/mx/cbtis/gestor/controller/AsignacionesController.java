@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mx.cbtis.gestor.dto.AsignacionRequest;
 import com.mx.cbtis.gestor.modelo.Asignaciones;
 import com.mx.cbtis.gestor.repository.AsignacionesRepository;
 
@@ -28,36 +29,36 @@ public class AsignacionesController {
 	}
 
 	@PostMapping("/addAsignacion")
-	public int addAsignacion(@RequestBody Asignaciones asignacion) {
-		return guardar(asignacion);
+	public int addAsignacion(@RequestBody AsignacionRequest request) {
+		return guardar(request);
 	}
 
 	@PostMapping("/updateAsignacion")
-	public int updateAsignacion(@RequestBody Asignaciones asignacion) {
-		return guardar(asignacion);
+	public int updateAsignacion(@RequestBody AsignacionRequest request) {
+		return guardar(request);
 	}
 
 	@DeleteMapping("/deleteAsignacion")
-	public int deleteAsignacion(@RequestBody Asignaciones asignacion) {
-		if (asignacion == null) {
+	public int deleteAsignacion(@RequestBody AsignacionRequest request) {
+		if (request == null || request.idAsignacion() == null || !asignacionesRepository.existsById(request.idAsignacion())) {
 			return RespuestaApi.FALLO;
 		}
-		asignacionesRepository.delete(asignacion);
+		asignacionesRepository.deleteById(request.idAsignacion());
 		return RespuestaApi.EXITO;
 	}
 
 	@PostMapping("/buscarAsignaciones")
 	public List<Asignaciones> getAsignaciones() {
-		List<Asignaciones> listaAsignaciones = new ArrayList<>();
-		asignacionesRepository.findAll().forEach(listaAsignaciones::add);
-		return listaAsignaciones;
+		List<Asignaciones> lista = new ArrayList<>();
+		asignacionesRepository.findAll().forEach(lista::add);
+		return lista;
 	}
 
-	private int guardar(Asignaciones asignacion) {
-		if (asignacion == null) {
+	private int guardar(AsignacionRequest request) {
+		if (request == null) {
 			return RespuestaApi.FALLO;
 		}
-		asignacionesRepository.save(asignacion);
+		asignacionesRepository.save(request.toEntity());
 		return RespuestaApi.EXITO;
 	}
 }

@@ -22,6 +22,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.mx.cbtis.gestor.dto.CredencialesRequest;
+import com.mx.cbtis.gestor.dto.UsuarioRequest;
 import com.mx.cbtis.gestor.modelo.Usuario;
 import com.mx.cbtis.gestor.repository.UsuarioRepository;
 
@@ -53,11 +55,10 @@ class UsuarioControllerTest {
 		return new Usuario(10, "Ana Lopez", CORREO, encoder.encode(CONTRASENA), "Estudiante", "#70FAB7");
 	}
 
-	private static Usuario credenciales(String correo, String contrasena) {
-		Usuario credenciales = new Usuario();
-		credenciales.setCorreoElectronico(correo);
-		credenciales.setContrasena(contrasena);
-		return credenciales;
+	private Usuario capturarGuardado() {
+		ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+		verify(repository).save(captor.capture());
+		return captor.getValue();
 	}
 
 	// ---------------------------------------------------------------- Login
@@ -68,7 +69,7 @@ class UsuarioControllerTest {
 		Usuario guardado = usuarioGuardado();
 		when(repository.findFirstByCorreoElectronico(CORREO)).thenReturn(Optional.of(guardado));
 
-		Usuario resultado = controller.getUsuarioLogin(credenciales(CORREO, CONTRASENA));
+		Usuario resultado = controller.getUsuarioLogin(new CredencialesRequest(CORREO, CONTRASENA));
 
 		assertThat(resultado).isSameAs(guardado);
 		assertThat(resultado.getNombre()).isEqualTo("Ana Lopez");
@@ -79,7 +80,7 @@ class UsuarioControllerTest {
 	void loginContrasenaIncorrecta() {
 		when(repository.findFirstByCorreoElectronico(CORREO)).thenReturn(Optional.of(usuarioGuardado()));
 
-		Usuario resultado = controller.getUsuarioLogin(credenciales(CORREO, "otraContrasena"));
+		Usuario resultado = controller.getUsuarioLogin(new CredencialesRequest(CORREO, "otraContrasena"));
 
 		assertThat(resultado.getNombre()).isEqualTo(UsuarioController.LOGIN_INVALIDO);
 		assertThat(resultado.getIdUsuario()).isNull();
@@ -90,7 +91,7 @@ class UsuarioControllerTest {
 	void loginCorreoInexistente() {
 		when(repository.findFirstByCorreoElectronico("nadie@cbtis.mx")).thenReturn(Optional.empty());
 
-		Usuario resultado = controller.getUsuarioLogin(credenciales("nadie@cbtis.mx", CONTRASENA));
+		Usuario resultado = controller.getUsuarioLogin(new CredencialesRequest("nadie@cbtis.mx", CONTRASENA));
 
 		assertThat(resultado.getNombre()).isEqualTo(UsuarioController.LOGIN_INVALIDO);
 	}
@@ -105,7 +106,7 @@ class UsuarioControllerTest {
 	@Test
 	@DisplayName("Login: sin correo regresa '000' sin consultar la BD")
 	void loginSinCorreo() {
-		assertThat(controller.getUsuarioLogin(credenciales(null, CONTRASENA)).getNombre())
+		assertThat(controller.getUsuarioLogin(new CredencialesRequest(null, CONTRASENA)).getNombre())
 				.isEqualTo(UsuarioController.LOGIN_INVALIDO);
 		verify(repository, never()).findFirstByCorreoElectronico(anyString());
 	}
@@ -113,7 +114,7 @@ class UsuarioControllerTest {
 	@Test
 	@DisplayName("Login: contrasena en blanco regresa '000' sin consultar la BD")
 	void loginContrasenaEnBlanco() {
-		assertThat(controller.getUsuarioLogin(credenciales(CORREO, "   ")).getNombre())
+		assertThat(controller.getUsuarioLogin(new CredencialesRequest(CORREO, "   ")).getNombre())
 				.isEqualTo(UsuarioController.LOGIN_INVALIDO);
 		verify(repository, never()).findFirstByCorreoElectronico(anyString());
 	}
@@ -124,7 +125,7 @@ class UsuarioControllerTest {
 		Usuario heredado = new Usuario(11, "Usuario viejo", CORREO, CONTRASENA, "Estudiante", "#000000");
 		when(repository.findFirstByCorreoElectronico(CORREO)).thenReturn(Optional.of(heredado));
 
-		Usuario resultado = controller.getUsuarioLogin(credenciales(CORREO, CONTRASENA));
+		Usuario resultado = controller.getUsuarioLogin(new CredencialesRequest(CORREO, CONTRASENA));
 
 		assertThat(resultado.getNombre()).isEqualTo(UsuarioController.LOGIN_INVALIDO);
 	}
@@ -156,15 +157,17 @@ class UsuarioControllerTest {
 	@Test
 	@DisplayName("Alta: guarda la contrasena CIFRADA (BCrypt), nunca en texto plano")
 	void altaCifraContrasena() {
-		Usuario nuevo = new Usuario(null, "Ana Lopez", CORREO, CONTRASENA, "Estudiante", "#70FAB7");
-		ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+		UsuarioRequest nuevo = new UsuarioRequest(null, "Ana Lopez", CORREO, CONTRASENA, "Estudiante", "#70FAB7");
 
 		assertThat(controller.addUsuario(nuevo)).isEqualTo(RespuestaApi.EXITO);
 
-		verify(repository).save(captor.capture());
-		String hash = captor.getValue().getContrasena();
-		assertThat(hash).isNotEqualTo(CONTRASENA).startsWith("$2");
-		assertThat(encoder.matches(CONTRASENA, hash)).isTrue();
+		Usuario guardado = capturarGuardado();
+		assertThat(guardado.getNombre()).isEqualTo("Ana Lopez");
+		assertThat(guardado.getCorreoElectronico()).isEqualTo(CORREO);
+		assertThat(guardado.getRol()).isEqualTo("Estudiante");
+		assertThat(guardado.getImagenUsuario()).isEqualTo("#70FAB7");
+		assertThat(guardado.getContrasena()).isNotEqualTo(CONTRASENA).startsWith("$2");
+		assertThat(encoder.matches(CONTRASENA, guardado.getContrasena())).isTrue();
 	}
 
 	@Test
@@ -177,7 +180,7 @@ class UsuarioControllerTest {
 	@Test
 	@DisplayName("Alta: sin contrasena regresa 0 y no guarda")
 	void altaSinContrasena() {
-		Usuario sinContrasena = new Usuario(null, "Ana Lopez", CORREO, null, "Estudiante", "#70FAB7");
+		UsuarioRequest sinContrasena = new UsuarioRequest(null, "Ana Lopez", CORREO, null, "Estudiante", "#70FAB7");
 
 		assertThat(controller.addUsuario(sinContrasena)).isEqualTo(RespuestaApi.FALLO);
 		verify(repository, never()).save(any());
@@ -188,51 +191,48 @@ class UsuarioControllerTest {
 	@Test
 	@DisplayName("Actualizacion: con contrasena nueva la guarda cifrada")
 	void actualizacionConContrasenaNueva() {
-		Usuario cambios = new Usuario(10, "Ana Lopez", CORREO, "NuevaClave1", "Estudiante", "#70FAB7");
-		ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+		UsuarioRequest cambios = new UsuarioRequest(10, "Ana Lopez", CORREO, "NuevaClave1", "Estudiante", "#70FAB7");
 
 		assertThat(controller.updateUsuario(cambios)).isEqualTo(RespuestaApi.EXITO);
 
-		verify(repository).save(captor.capture());
-		assertThat(encoder.matches("NuevaClave1", captor.getValue().getContrasena())).isTrue();
+		assertThat(encoder.matches("NuevaClave1", capturarGuardado().getContrasena())).isTrue();
 		verify(repository, never()).findById(anyInt());
 	}
 
 	@Test
 	@DisplayName("Actualizacion: sin contrasena conserva el hash guardado")
 	void actualizacionSinContrasenaConservaHash() {
-		Usuario guardado = usuarioGuardado();
-		String hashOriginal = guardado.getContrasena();
-		when(repository.findById(10)).thenReturn(Optional.of(guardado));
-		Usuario cambios = new Usuario(10, "Ana L.", CORREO, null, "Docente", "#FFFFFF");
+		Usuario actual = usuarioGuardado();
+		when(repository.findById(10)).thenReturn(Optional.of(actual));
+		UsuarioRequest cambios = new UsuarioRequest(10, "Ana L.", CORREO, null, "Docente", "#FFFFFF");
 
 		assertThat(controller.updateUsuario(cambios)).isEqualTo(RespuestaApi.EXITO);
 
-		assertThat(cambios.getContrasena()).isEqualTo(hashOriginal);
-		verify(repository).save(cambios);
+		Usuario guardado = capturarGuardado();
+		assertThat(guardado.getContrasena()).isEqualTo(actual.getContrasena());
+		assertThat(guardado.getRol()).isEqualTo("Docente");
 	}
 
 	@Test
 	@DisplayName("Actualizacion: sin contrasena y usuario inexistente guarda sin contrasena")
 	void actualizacionSinContrasenaUsuarioInexistente() {
 		when(repository.findById(50)).thenReturn(Optional.empty());
-		Usuario cambios = new Usuario(50, "Nuevo", "nuevo@cbtis.mx", "", "Estudiante", "#FFFFFF");
+		UsuarioRequest cambios = new UsuarioRequest(50, "Nuevo", "nuevo@cbtis.mx", "", "Estudiante", "#FFFFFF");
 
 		assertThat(controller.updateUsuario(cambios)).isEqualTo(RespuestaApi.EXITO);
 
-		assertThat(cambios.getContrasena()).isEmpty();
-		verify(repository).save(cambios);
+		assertThat(capturarGuardado().getContrasena()).isEmpty();
 	}
 
 	@Test
 	@DisplayName("Actualizacion: sin contrasena y sin id no consulta la BD")
 	void actualizacionSinContrasenaSinId() {
-		Usuario cambios = new Usuario(null, "Nuevo", "nuevo@cbtis.mx", null, "Estudiante", "#FFFFFF");
+		UsuarioRequest cambios = new UsuarioRequest(null, "Nuevo", "nuevo@cbtis.mx", null, "Estudiante", "#FFFFFF");
 
 		assertThat(controller.updateUsuario(cambios)).isEqualTo(RespuestaApi.EXITO);
 
 		verify(repository, never()).findById(anyInt());
-		verify(repository).save(cambios);
+		assertThat(capturarGuardado().getNombre()).isEqualTo("Nuevo");
 	}
 
 	@Test
@@ -245,19 +245,38 @@ class UsuarioControllerTest {
 	// ---------------------------------------------------------------- Baja y listado
 
 	@Test
-	@DisplayName("Baja: elimina al usuario y regresa 1")
+	@DisplayName("Baja: si el usuario existe lo elimina por id y regresa 1")
 	void bajaExitosa() {
-		Usuario guardado = usuarioGuardado();
+		when(repository.existsById(10)).thenReturn(true);
 
-		assertThat(controller.deleteUsuario(guardado)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).delete(guardado);
+		assertThat(controller.deleteUsuario(new UsuarioRequest(10, null, null, null, null, null)))
+				.isEqualTo(RespuestaApi.EXITO);
+		verify(repository).deleteById(10);
+	}
+
+	@Test
+	@DisplayName("Baja: si el usuario NO existe regresa 0 y no elimina")
+	void bajaInexistente() {
+		when(repository.existsById(10)).thenReturn(false);
+
+		assertThat(controller.deleteUsuario(new UsuarioRequest(10, null, null, null, null, null)))
+				.isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).deleteById(any());
+	}
+
+	@Test
+	@DisplayName("Baja: sin id regresa 0 sin consultar la BD")
+	void bajaSinId() {
+		assertThat(controller.deleteUsuario(new UsuarioRequest(null, "Ana", CORREO, null, null, null)))
+				.isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).existsById(any());
 	}
 
 	@Test
 	@DisplayName("Baja: cuerpo nulo regresa 0 y no elimina")
 	void bajaNula() {
 		assertThat(controller.deleteUsuario(null)).isEqualTo(RespuestaApi.FALLO);
-		verify(repository, never()).delete(any());
+		verify(repository, never()).deleteById(any());
 	}
 
 	@Test

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mx.cbtis.gestor.dto.ProyectoRequest;
 import com.mx.cbtis.gestor.modelo.Proyectos;
 import com.mx.cbtis.gestor.repository.ProyectosRepository;
 
@@ -28,36 +29,36 @@ public class ProyectosController {
 	}
 
 	@PostMapping("/addProyecto")
-	public int addProyecto(@RequestBody Proyectos proyecto) {
-		return guardar(proyecto);
+	public int addProyecto(@RequestBody ProyectoRequest request) {
+		return guardar(request);
 	}
 
 	@PostMapping("/updateProyecto")
-	public int updateProyecto(@RequestBody Proyectos proyecto) {
-		return guardar(proyecto);
+	public int updateProyecto(@RequestBody ProyectoRequest request) {
+		return guardar(request);
 	}
 
 	@DeleteMapping("/deleteProyecto")
-	public int deleteProyecto(@RequestBody Proyectos proyecto) {
-		if (proyecto == null) {
+	public int deleteProyecto(@RequestBody ProyectoRequest request) {
+		if (request == null || request.idProyecto() == null || !proyectosRepository.existsById(request.idProyecto())) {
 			return RespuestaApi.FALLO;
 		}
-		proyectosRepository.delete(proyecto);
+		proyectosRepository.deleteById(request.idProyecto());
 		return RespuestaApi.EXITO;
 	}
 
 	@PostMapping("/buscarProyectos")
 	public List<Proyectos> getProyectos() {
-		List<Proyectos> listaProyectos = new ArrayList<>();
-		proyectosRepository.findAll().forEach(listaProyectos::add);
-		return listaProyectos;
+		List<Proyectos> lista = new ArrayList<>();
+		proyectosRepository.findAll().forEach(lista::add);
+		return lista;
 	}
 
-	private int guardar(Proyectos proyecto) {
-		if (proyecto == null) {
+	private int guardar(ProyectoRequest request) {
+		if (request == null) {
 			return RespuestaApi.FALLO;
 		}
-		proyectosRepository.save(proyecto);
+		proyectosRepository.save(request.toEntity());
 		return RespuestaApi.EXITO;
 	}
 }

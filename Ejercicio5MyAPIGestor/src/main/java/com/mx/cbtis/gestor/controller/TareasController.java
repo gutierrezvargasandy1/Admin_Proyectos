@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mx.cbtis.gestor.dto.FiltroProyectoRequest;
+import com.mx.cbtis.gestor.dto.TareaRequest;
 import com.mx.cbtis.gestor.modelo.Tareas;
 import com.mx.cbtis.gestor.repository.TareasRepository;
 
@@ -23,11 +25,11 @@ public class TareasController {
 	}
 
 	@PostMapping("/getTarea")
-	public List<Tareas> getTareasPorProyecto(@RequestBody Tareas filtro) {
-		if (filtro == null || filtro.getIdProyecto() == null) {
+	public List<Tareas> getTareasPorProyecto(@RequestBody FiltroProyectoRequest filtro) {
+		if (filtro == null || filtro.idProyecto() == null) {
 			return new ArrayList<>();
 		}
-		return tareasRepository.findByIdProyecto(filtro.getIdProyecto());
+		return tareasRepository.findByIdProyecto(filtro.idProyecto());
 	}
 
 	@GetMapping("/buscarTarea")
@@ -36,36 +38,36 @@ public class TareasController {
 	}
 
 	@PostMapping("/addTareas")
-	public int addTareas(@RequestBody Tareas tarea) {
-		return guardar(tarea);
+	public int addTareas(@RequestBody TareaRequest request) {
+		return guardar(request);
 	}
 
 	@PostMapping("/updateTareas")
-	public int updateTareas(@RequestBody Tareas tarea) {
-		return guardar(tarea);
+	public int updateTareas(@RequestBody TareaRequest request) {
+		return guardar(request);
 	}
 
 	@DeleteMapping("/deleteTareas")
-	public int deleteTareas(@RequestBody Tareas tarea) {
-		if (tarea == null) {
+	public int deleteTareas(@RequestBody TareaRequest request) {
+		if (request == null || request.idTarea() == null || !tareasRepository.existsById(request.idTarea())) {
 			return RespuestaApi.FALLO;
 		}
-		tareasRepository.delete(tarea);
+		tareasRepository.deleteById(request.idTarea());
 		return RespuestaApi.EXITO;
 	}
 
 	@PostMapping("/buscarTareas")
 	public List<Tareas> getTareas() {
-		List<Tareas> listaTareas = new ArrayList<>();
-		tareasRepository.findAll().forEach(listaTareas::add);
-		return listaTareas;
+		List<Tareas> lista = new ArrayList<>();
+		tareasRepository.findAll().forEach(lista::add);
+		return lista;
 	}
 
-	private int guardar(Tareas tarea) {
-		if (tarea == null) {
+	private int guardar(TareaRequest request) {
+		if (request == null) {
 			return RespuestaApi.FALLO;
 		}
-		tareasRepository.save(tarea);
+		tareasRepository.save(request.toEntity());
 		return RespuestaApi.EXITO;
 	}
 }

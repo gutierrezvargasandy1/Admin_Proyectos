@@ -14,9 +14,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.mx.cbtis.gestor.dto.ComentarioRequest;
+import com.mx.cbtis.gestor.dto.FiltroTareaRequest;
 import com.mx.cbtis.gestor.modelo.Comentarios;
 import com.mx.cbtis.gestor.repository.ComentariosRepository;
 
@@ -41,6 +44,14 @@ class ComentariosControllerTest {
 		return new Comentarios(5, "Ana Lopez", 7, "Revisar el avance", "2026-11-05 10:00");
 	}
 
+	private static ComentarioRequest peticion() {
+		return new ComentarioRequest(5, "Ana Lopez", 7, "Revisar el avance", "2026-11-05 10:00");
+	}
+
+	private static ComentarioRequest peticionSinId() {
+		return new ComentarioRequest(null, "Ana Lopez", 7, "Revisar el avance", "2026-11-05 10:00");
+	}
+
 	@Test
 	@DisplayName("Buscar por id: regresa el registro cuando existe")
 	void buscarPorIdExistente() {
@@ -50,7 +61,6 @@ class ComentariosControllerTest {
 		Comentarios resultado = controller.getComentario(5);
 
 		assertThat(resultado).isSameAs(esperado);
-		assertThat(resultado.getIdComentario()).isEqualTo(5);
 	}
 
 	@Test
@@ -65,12 +75,14 @@ class ComentariosControllerTest {
 	}
 
 	@Test
-	@DisplayName("Alta: guarda el registro y regresa 1")
+	@DisplayName("Alta: convierte el DTO a entidad con TODOS sus campos, guarda y regresa 1")
 	void altaExitosa() {
-		Comentarios nuevo = muestra();
+		ArgumentCaptor<Comentarios> captor = ArgumentCaptor.forClass(Comentarios.class);
 
-		assertThat(controller.addComentario(nuevo)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).save(nuevo);
+		assertThat(controller.addComentario(peticion())).isEqualTo(RespuestaApi.EXITO);
+
+		verify(repository).save(captor.capture());
+		assertThat(captor.getValue()).usingRecursiveComparison().isEqualTo(muestra());
 	}
 
 	@Test
@@ -81,12 +93,14 @@ class ComentariosControllerTest {
 	}
 
 	@Test
-	@DisplayName("Actualizacion: guarda el registro y regresa 1")
+	@DisplayName("Actualizacion: convierte el DTO a entidad, guarda y regresa 1")
 	void actualizacionExitosa() {
-		Comentarios existente = muestra();
+		ArgumentCaptor<Comentarios> captor = ArgumentCaptor.forClass(Comentarios.class);
 
-		assertThat(controller.updateComentario(existente)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).save(existente);
+		assertThat(controller.updateComentario(peticion())).isEqualTo(RespuestaApi.EXITO);
+
+		verify(repository).save(captor.capture());
+		assertThat(captor.getValue().getIdComentario()).isEqualTo(5);
 	}
 
 	@Test
@@ -97,19 +111,35 @@ class ComentariosControllerTest {
 	}
 
 	@Test
-	@DisplayName("Baja: elimina el registro y regresa 1")
+	@DisplayName("Baja: si el registro existe lo elimina por id y regresa 1")
 	void bajaExitosa() {
-		Comentarios existente = muestra();
+		when(repository.existsById(5)).thenReturn(true);
 
-		assertThat(controller.deleteComentario(existente)).isEqualTo(RespuestaApi.EXITO);
-		verify(repository).delete(existente);
+		assertThat(controller.deleteComentario(peticion())).isEqualTo(RespuestaApi.EXITO);
+		verify(repository).deleteById(5);
 	}
 
 	@Test
-	@DisplayName("Baja: con cuerpo nulo NO elimina y regresa 0")
+	@DisplayName("Baja: si el registro NO existe regresa 0 y no elimina")
+	void bajaInexistente() {
+		when(repository.existsById(5)).thenReturn(false);
+
+		assertThat(controller.deleteComentario(peticion())).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).deleteById(any());
+	}
+
+	@Test
+	@DisplayName("Baja: sin id regresa 0 sin consultar la BD")
+	void bajaSinId() {
+		assertThat(controller.deleteComentario(peticionSinId())).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).existsById(any());
+	}
+
+	@Test
+	@DisplayName("Baja: con cuerpo nulo regresa 0")
 	void bajaNula() {
 		assertThat(controller.deleteComentario(null)).isEqualTo(RespuestaApi.FALLO);
-		verify(repository, never()).delete(any());
+		verify(repository, never()).deleteById(any());
 	}
 
 	@Test
@@ -119,9 +149,7 @@ class ComentariosControllerTest {
 		Comentarios segundo = new Comentarios();
 		when(repository.findAll()).thenReturn(List.of(primero, segundo));
 
-		List<Comentarios> resultado = controller.getComentarios();
-
-		assertThat(resultado).containsExactly(primero, segundo);
+		assertThat(controller.getComentarios()).containsExactly(primero, segundo);
 	}
 
 	@Test
@@ -135,18 +163,16 @@ class ComentariosControllerTest {
 	@Test
 	@DisplayName("Filtro por tarea: regresa los registros relacionados")
 	void filtroConDatos() {
-		Comentarios filtro = new Comentarios();
-		filtro.setIdTarea(7);
 		List<Comentarios> esperados = List.of(muestra());
 		when(repository.findByIdTarea(7)).thenReturn(esperados);
 
-		assertThat(controller.getComentariosPorTarea(filtro)).isEqualTo(esperados);
+		assertThat(controller.getComentariosPorTarea(new FiltroTareaRequest(7))).isEqualTo(esperados);
 	}
 
 	@Test
 	@DisplayName("Filtro por tarea: sin tarea regresa lista vacia y no consulta la BD")
 	void filtroSinLlave() {
-		assertThat(controller.getComentariosPorTarea(new Comentarios())).isEmpty();
+		assertThat(controller.getComentariosPorTarea(new FiltroTareaRequest(null))).isEmpty();
 		verify(repository, never()).findByIdTarea(any());
 	}
 
