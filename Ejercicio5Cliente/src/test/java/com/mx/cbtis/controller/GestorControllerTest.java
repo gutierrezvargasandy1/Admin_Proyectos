@@ -1,5 +1,6 @@
 package com.mx.cbtis.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 import com.mx.cbtis.cliente.GestorApiClient;
@@ -87,6 +89,31 @@ class GestorControllerTest {
 				.andExpect(view().name(GestorController.VISTA_PROYECTO))
 				.andExpect(model().attributeExists("tarea", "comentarios"))
 				.andExpect(model().attribute("listaUsuarios", usuarios));
+	}
+
+	// ------------------------------------------------------------ Seguridad del enlace de formularios
+
+	@Test
+	@DisplayName("InitBinder: solo permite los campos de los formularios y no crea rutas anidadas")
+	void binderRestringido() {
+		WebDataBinder binder = new WebDataBinder(new Proyectos());
+
+		new GestorController(api).configurarBinder(binder);
+
+		assertThat(binder.isAutoGrowNestedPaths()).isFalse();
+		assertThat(binder.getAllowedFields()).containsExactly(GestorController.CAMPOS_PERMITIDOS);
+	}
+
+	@Test
+	@DisplayName("POST /saveProyecto: ignora campos no permitidos enviados en el formulario")
+	void saveProyectoIgnoraCamposNoPermitidos() throws Exception {
+		mockMvc.perform(post("/saveProyecto")
+				.param("nombre", "Seguro")
+				.param("class.module.classLoader", "ataque"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/inicio"));
+
+		verify(api).addProyecto(argThat(p -> "Seguro".equals(p.getNombre())));
 	}
 
 	// ------------------------------------------------------------ Usuarios

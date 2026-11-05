@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Supresiones de OWASP Dependency-Check - Gestor de Proyectos (Cliente / frontend).
+  Cada bloque documenta POR QUE la vulnerabilidad no aplica o por que se acepta el riesgo.
+  Las vulnerabilidades corregidas NO se suprimen: se resolvieron actualizando la libreria
+  (ver tomcat.version, thymeleaf.version y spring-framework.version en el pom.xml).
+  El riesgo aceptado vence antes (2026-12-31) para revisarlo pronto.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[FALSO POSITIVO: CVE disputada por el proyecto Jackson (no considerada vulnerabilidad por el fabricante).]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson\-databind@.*$</packageUrl>
+        <cve>CVE-2023-35116</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Requiere @JsonIgnoreProperties por propiedad combinado con ACCEPT_CASE_INSENSITIVE_PROPERTIES; no se usan.]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson\-databind@.*$</packageUrl>
+        <cve>CVE-2026-54515</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Requiere deserializacion polimorfica (default typing / @JsonTypeInfo); no se habilita.]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson\-databind@.*$</packageUrl>
+        <cve>CVE-2026-54512</cve>
+        <cve>CVE-2026-54513</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Requiere enlazar JSON a campos InetSocketAddress; ningun modelo los tiene.]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson\-databind@.*$</packageUrl>
+        <cve>CVE-2026-54514</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[FALSO POSITIVO: Falso positivo por coincidencia de CPE: la vulnerabilidad esta en log4j-core (layouts/appenders). El proyecto solo trae log4j-api como puente hacia SLF4J/Logback; log4j-core no esta presente.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.logging\.log4j/log4j\-api@.*$</packageUrl>
+        <cve>CVE-2025-68161</cve>
+        <cve>CVE-2026-34477</cve>
+        <cve>CVE-2026-34478</cve>
+        <cve>CVE-2026-34479</cve>
+        <cve>CVE-2026-34480</cve>
+        <cve>CVE-2026-34481</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Afecta a la serializacion JSON de MapMessage; la aplicacion registra con SLF4J/Logback y no usa MapMessage.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.logging\.log4j/log4j\-api@.*$</packageUrl>
+        <cve>CVE-2026-49844</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Afecta a JavaScriptUtils.javaScriptEscape(); no se usa (Thymeleaf usa su propio escape).]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-41845</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Afecta a Server-Sent Events del framework funcional; el frontend no usa SSE.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-22735</cve>
+        <cve>CVE-2026-59313</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Afecta a Spring RSocket; el modulo no esta en el proyecto.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-47888</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Afecta a cabeceras Content-Disposition construidas con datos externos; el frontend no genera descargas.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-59314</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Afecta a la integracion JMS (spring-jms); el modulo no esta en el proyecto.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-41855</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Afecta a otra tecnologia de vistas (XSLT, JSP, FreeMarker, motores de scripting o UrlFileNameViewController); el frontend solo usa plantillas Thymeleaf.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-22737</cve>
+        <cve>CVE-2026-41846</cve>
+        <cve>CVE-2026-47884</cve>
+        <cve>CVE-2026-47887</cve>
+        <cve>CVE-2026-59280</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Afecta a spring-websocket; el frontend no usa WebSocket.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-41838</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Requiere evaluar expresiones SpEL proporcionadas por el usuario; Thymeleaf solo evalua expresiones escritas en las plantillas, nunca texto del usuario.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-41850</cve>
+        <cve>CVE-2026-41851</cve>
+        <cve>CVE-2026-41852</cve>
+        <cve>CVE-2026-47886</cve>
+        <cve>CVE-2026-59283</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Requiere mostrar errores de enlace (Errors) en la vista; las plantillas no renderizan errores de validacion.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-59281</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Requiere que el atacante envie un patron que la aplicacion compile; el frontend no acepta patrones.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-41848</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Requiere un mapeo "/**" que no especifique nombre de vista; todos los controladores del frontend devuelven un nombre de vista explicito.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-41844</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA: Solo afecta a aplicaciones Spring WebFlux; el frontend usa Spring MVC (servlet) y no incluye spring-webflux.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-22740</cve>
+        <cve>CVE-2026-41839</cve>
+        <cve>CVE-2026-41840</cve>
+        <cve>CVE-2026-47885</cve>
+        <cve>CVE-2026-47891</cve>
+        <cve>CVE-2026-47892</cve>
+        <cve>CVE-2026-47893</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA - MITIGADA: MITIGADO: el controlador restringe el enlace de formularios con @InitBinder (setAllowedFields y setAutoGrowNestedPaths(false)), por lo que no se aceptan rutas de propiedades arbitrarias.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-59282</cve>
+    </suppress>
+    <suppress until="2027-05-05Z">
+        <notes><![CDATA[NO APLICA - MITIGADA: MITIGADO: el frontend no recibe archivos y se desactivo con spring.servlet.multipart.enabled=false.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-41853</cve>
+    </suppress>
+    <suppress until="2026-12-31Z">
+        <notes><![CDATA[REAL - RIESGO ACEPTADO: REAL - RIESGO RESIDUAL ACEPTADO: el frontend si sirve recursos estaticos (css/js/imagenes). Spring Framework 6.1 ya no tiene parche publico (la correccion esta en 6.1.28+ comercial o en 6.2.x/7.x). Mitigacion: los recursos se sirven solo desde el classpath (dentro del jar, solo lectura), sin carpetas del sistema de archivos ni contenido subido por usuarios. Plan: migrar a una version de Spring con soporte.]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
+        <cve>CVE-2026-22741</cve>
+        <cve>CVE-2026-22745</cve>
+        <cve>CVE-2026-41841</cve>
+        <cve>CVE-2026-41842</cve>
+        <cve>CVE-2026-41843</cve>
+    </suppress>
+</suppressions>

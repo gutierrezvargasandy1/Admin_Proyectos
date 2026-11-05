@@ -5,7 +5,9 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,10 +30,26 @@ public class GestorController {
 	static final String REDIRECT_INICIO = "redirect:/inicio";
 	static final String REDIRECT_PROYECTO = "redirect:/proyecto";
 
+	/**
+	 * Unicos campos que los formularios pueden enviar (usuario, proyecto y tarea).
+	 * Mitiga CVE-2026-59282 (DoS por rutas de propiedades enviadas por el usuario)
+	 * y la asignacion masiva de campos no previstos.
+	 */
+	static final String[] CAMPOS_PERMITIDOS = {
+			"id_usuario", "nombre", "correo_electronico", "contrasena", "rol", "imagen_usuario",
+			"id_proyecto", "descripcion", "fecha_inicio", "fecha_finalizacion", "estado_proyecto", "fondo",
+			"id_tarea", "fecha_vencimiento", "estado", "lista" };
+
 	private final GestorApiClient api;
 
 	public GestorController(GestorApiClient api) {
 		this.api = api;
+	}
+
+	@InitBinder
+	void configurarBinder(WebDataBinder binder) {
+		binder.setAutoGrowNestedPaths(false);
+		binder.setAllowedFields(CAMPOS_PERMITIDOS);
 	}
 
 	// ------------------------------------------------------------ Vistas
