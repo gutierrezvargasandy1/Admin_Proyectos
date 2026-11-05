@@ -1,0 +1,102 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'jdk21'          // JDK 21 configurado en Manage Jenkins > Tools
+        maven 'maven-3.9'    // Maven configurado en Manage Jenkins > Tools
+    }
+
+    environment {
+        APP_DIR = 'database'
+        // MariaDB de docker-compose, accesible por nombre dentro de la red ci-net
+        DB_HOST = 'mariadb-server'
+        DB_PORT = '3306'
+    }
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 30, unit: 'MINUTES')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Verificar entorno') {
+            steps {
+                sh 'java -version'
+                sh 'mvn -version'
+            }
+        }
+
+        stage('Analisis estatico SQL') {
+            steps {
+                dir(APP_DIR) {
+                    // Lint de los scripts: convencion Flyway, sin DROP/TRUNCATE, PK + InnoDB + utf8mb4,
+                    // sin latin1 ni SELECT *, datos ficticios y contrasenas BCrypt. No necesita BD.
+                    sh 'mvn -B test -Dtest=ScriptsSqlLintTest'
+                }
+            }
+            post {
+                always {
+                    junit testResults: "${APP_DIR}/target/surefire-reports/*.xml", allowEmptyResults: true
+                }
+            }
+        }
+
+        stage('Migracion y pruebas de BD') {
+            steps {
+                dir(APP_DIR) {
+                    withCredentials([usernamePassword(credentialsId: 'mariadb-root',
+                                                      usernameVariable: 'DB_ADMIN_USER',
+                                                      passwordVariable: 'DB_ADMIN_PASSWORD')]) {
+                        // Crea una BD temporal, aplica las migraciones con Flyway, ejecuta las pruebas
+                        // (estructura, llaves foraneas, restricciones, datos) y la elimina al final.
+                        sh 'mvn -B verify'
+                    }
+                }
+            }
+            post {
+                always {
+                    junit testResults: "${APP_DIR}/target/surefire-reports/*.xml", allowEmptyResults: true
+                }
+            }
+        }
+
+        stage('Analisis SonarQube') {
+            steps {
+                dir(APP_DIR) {
+                    withSonarQubeEnv('sonarqube') {
+                        sh 'mvn -B sonar:sonar'
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                // SonarQube bloquea webhooks hacia IPs internas (proteccion SSRF).
+                // Se espera a que procese el analisis y se consulta el resultado directamente.
+                sleep(time: 15, unit: 'SECONDS')
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            archiveArtifacts artifacts: "${APP_DIR}/src/main/resources/db/migration/*.sql", fingerprint: true
+            echo 'Pipeline base de datos OK: scripts validados, migraciones aplicadas y pruebas aprobadas.'
+        }
+        failure {
+            echo 'Pipeline base de datos FALLO: revisar la etapa marcada en rojo.'
+        }
+    }
+}
