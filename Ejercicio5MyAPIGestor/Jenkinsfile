@@ -1,0 +1,98 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'jdk21'          // JDK 21 configurado en Manage Jenkins > Tools
+        maven 'maven-3.9'    // Maven configurado en Manage Jenkins > Tools
+    }
+
+    environment {
+        APP_DIR = 'Ejercicio5MyAPIGestor'
+    }
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 30, unit: 'MINUTES')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Verificar entorno') {
+            steps {
+                sh 'java -version'
+                sh 'mvn -version'
+            }
+        }
+
+        stage('Compilar') {
+            steps {
+                dir(APP_DIR) {
+                    sh 'mvn -B clean compile'
+                }
+            }
+        }
+
+        stage('Pruebas y cobertura') {
+            steps {
+                dir(APP_DIR) {
+                    // test (Surefire) + reporte JaCoCo + empaquetado
+                    sh 'mvn -B verify'
+                }
+            }
+            post {
+                always {
+                    junit testResults: "${APP_DIR}/target/surefire-reports/*.xml", allowEmptyResults: false
+                    jacoco(
+                        execPattern:      "${APP_DIR}/target/jacoco.exec",
+                        classPattern:     "${APP_DIR}/target/classes",
+                        sourcePattern:    "${APP_DIR}/src/main/java",
+                        exclusionPattern: '**/Ejercicio5MyApiGestorApplication.class'
+                    )
+                    publishHTML(target: [
+                        reportName:  'Reporte JaCoCo',
+                        reportDir:   "${APP_DIR}/target/site/jacoco",
+                        reportFiles: 'index.html',
+                        keepAll: true,
+                        alwaysLinkToLastBuild: true,
+                        allowMissing: false
+                    ])
+                }
+            }
+        }
+
+        stage('Analisis SonarQube') {
+            steps {
+                dir(APP_DIR) {
+                    withSonarQubeEnv('sonarqube') {
+                        sh 'mvn -B sonar:sonar'
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            archiveArtifacts artifacts: "${APP_DIR}/target/*.jar", fingerprint: true
+            echo 'Pipeline backend OK: compilacion, pruebas, cobertura y calidad aprobados.'
+        }
+        failure {
+            echo 'Pipeline backend FALLO: revisar la etapa marcada en rojo.'
+        }
+    }
+}
