@@ -79,6 +79,9 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
+                // SonarQube bloquea webhooks hacia IPs internas (proteccion SSRF).
+                // Se espera a que procese el analisis y se consulta el resultado directamente.
+                sleep(time: 15, unit: 'SECONDS')
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
