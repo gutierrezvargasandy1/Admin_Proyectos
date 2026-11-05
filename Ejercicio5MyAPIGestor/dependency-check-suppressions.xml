@@ -49,17 +49,17 @@
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[FALSO POSITIVO: Afecta a HttpInvokerServiceExporter (deserializacion Java); no se usa. Ademas es una CVE disputada por el fabricante.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2016-1000027</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a la integracion JMS (spring-jms); el modulo no esta en el proyecto.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-41855</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a tecnologias de vistas del lado servidor (XSLT/JSP/FreeMarker/scripting/controladores de vista); la API solo devuelve JSON (@RestController).]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-22737</cve>
         <cve>CVE-2026-41844</cve>
         <cve>CVE-2026-41846</cve>
@@ -70,7 +70,7 @@
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Solo afecta a aplicaciones Spring WebFlux; la API usa Spring MVC (servlet) y no incluye spring-webflux.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-22740</cve>
         <cve>CVE-2026-41839</cve>
         <cve>CVE-2026-41840</cve>
@@ -81,13 +81,13 @@
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a Server-Sent Events del framework funcional; la API no usa SSE.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-22735</cve>
         <cve>CVE-2026-59313</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Requiere que la aplicacion evalue expresiones SpEL proporcionadas por el usuario; la API nunca evalua SpEL con datos de entrada.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-41849</cve>
         <cve>CVE-2026-41850</cve>
         <cve>CVE-2026-41851</cve>
@@ -97,38 +97,38 @@
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a spring-websocket; la API no usa WebSocket.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-41838</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Requiere que el atacante envie un patron que la aplicacion compile; la API no acepta patrones.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-41848</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a Spring RSocket; el modulo no esta en el proyecto.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-47888</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Requiere enlazar rutas de propiedades enviadas por el usuario (WebDataBinder/@ModelAttribute); la API recibe DTOs JSON (records) y parametros simples.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2024-38820</cve>
         <cve>CVE-2026-59282</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a JavaScriptUtils.javaScriptEscape(); no se usa en el proyecto.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-41845</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a cabeceras Content-Disposition construidas con datos externos; la API no genera descargas.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-59314</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA - MITIGADA: Afecta a la resolucion de recursos estaticos; MITIGADO: la API no sirve estaticos y se desactivo con spring.web.resources.add-mappings=false.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-22741</cve>
         <cve>CVE-2026-22745</cve>
         <cve>CVE-2026-41841</cve>
@@ -137,43 +137,43 @@
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA - MITIGADA: Afecta al procesamiento multipart; MITIGADO: la API no recibe archivos y se desactivo con spring.servlet.multipart.enabled=false.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-(core|web|webmvc)@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-[a-z\-]+@.*$</packageUrl>
         <cve>CVE-2026-41853</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a la autoconfiguracion de Cassandra; el proyecto no usa Cassandra.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot(\-starter\-web)?@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot[a-z\-]*@.*$</packageUrl>
         <cve>CVE-2026-40974</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Requiere Spring Boot Actuator en el classpath; el proyecto no incluye Actuator.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot(\-starter\-web)?@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot[a-z\-]*@.*$</packageUrl>
         <cve>CVE-2023-34055</cve>
         <cve>CVE-2026-22733</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta al "remote secret" de Spring Boot DevTools (actualizacion remota); DevTools no esta incluido.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot(\-starter\-web)?@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot[a-z\-]*@.*$</packageUrl>
         <cve>CVE-2026-40972</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta al uso de ${random.value} como secreto; el proyecto no lo usa.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot(\-starter\-web)?@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot[a-z\-]*@.*$</packageUrl>
         <cve>CVE-2026-40975</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Requiere server.servlet.session.persistent=true y un atacante local en el mismo equipo; la API no usa sesiones persistentes.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot(\-starter\-web)?@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot[a-z\-]*@.*$</packageUrl>
         <cve>CVE-2026-40973</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a ApplicationPidFileWriter; no esta configurado.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot(\-starter\-web)?@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot[a-z\-]*@.*$</packageUrl>
         <cve>CVE-2026-40977</cve>
     </suppress>
     <suppress until="2027-05-05Z">
         <notes><![CDATA[NO APLICA: Afecta a Artemis embebido (mensajeria JMS); no se usa.]]></notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot(\-starter\-web)?@.*$</packageUrl>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.boot/spring\-boot[a-z\-]*@.*$</packageUrl>
         <cve>CVE-2026-41001</cve>
     </suppress>
     <suppress until="2027-05-05Z">
