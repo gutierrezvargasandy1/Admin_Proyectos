@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -23,6 +24,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
  * <li>409: los datos violan una regla de la base de datos (campo obligatorio, correo duplicado,
  * fecha invalida o referencia a un registro inexistente).</li>
  * </ul>
+ * Nota: el driver de MariaDB reporta los valores con formato invalido (error 1292, SQLState 22007,
+ * p. ej. la fecha 2026-13-45) como SQLSyntaxErrorException, que Spring traduce a
+ * InvalidDataAccessResourceUsageException y no a DataIntegrityViolationException; por eso
+ * ambas excepciones se atienden en el mismo manejador (falla detectada en la reprueba).
  * El cuerpo siempre es JSON con {@code resultado = 0} (mismo valor de fallo que usan los endpoints),
  * el tipo de error y un mensaje legible. Nunca se expone el detalle SQL ni la traza.
  */
@@ -52,7 +57,7 @@ public class ManejadorErrores {
 		return respuesta(HttpStatus.BAD_REQUEST, SOLICITUD_INVALIDA, MENSAJE_CUERPO);
 	}
 
-	@ExceptionHandler(DataIntegrityViolationException.class)
+	@ExceptionHandler({ DataIntegrityViolationException.class, InvalidDataAccessResourceUsageException.class })
 	public ResponseEntity<Map<String, Object>> integridad() {
 		return respuesta(HttpStatus.CONFLICT, DATOS_INVALIDOS, MENSAJE_INTEGRIDAD);
 	}

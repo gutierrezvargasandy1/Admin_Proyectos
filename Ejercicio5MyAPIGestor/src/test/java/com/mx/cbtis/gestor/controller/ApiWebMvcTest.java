@@ -22,6 +22,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -253,6 +254,20 @@ class ApiWebMvcTest {
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.resultado").value(0))
 				.andExpect(jsonPath("$.error").value(ManejadorErrores.DATOS_INVALIDOS))
+				.andExpect(jsonPath("$.mensaje").value(ManejadorErrores.MENSAJE_INTEGRIDAD));
+	}
+
+	@Test
+	@DisplayName("POST /addProyecto con fecha invalida (error 1292 de MariaDB) regresa 409 controlado")
+	void altaProyectoFechaInvalida() throws Exception {
+		when(proyectosRepository.save(any(Proyectos.class)))
+				.thenThrow(new InvalidDataAccessResourceUsageException("Incorrect date value: '2026-13-45'"));
+
+		mockMvc.perform(post("/addProyecto")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nombre\":\"Fecha invalida\",\"fecha_inicio\":\"2026-13-45\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.resultado").value(0))
 				.andExpect(jsonPath("$.mensaje").value(ManejadorErrores.MENSAJE_INTEGRIDAD));
 	}
 }
