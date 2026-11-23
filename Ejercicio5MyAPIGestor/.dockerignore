@@ -1,0 +1,5 @@
+target/
+pruebas_python/
+.idea/
+.vscode/
+*.iml

@@ -1,0 +1,86 @@
+# Despliegue del Gestor de Proyectos con las imagenes Docker de los microservicios.
+#
+#   gestor-db       MariaDB 10.11 con el esquema y los datos semilla (imagen propia)
+#   gestor-api      API REST Spring Boot (Java 21)              -> red interna, puerto 8081
+#   gestor-cliente  Cliente web Spring Boot + Thymeleaf (Java 21) -> puerto 8082
+#   gestor-tunel    Cloudflare Tunnel: publica el cliente en una URL https://*.trycloudflare.com
+#
+# Es independiente del docker-compose.yml de CI (Jenkins, SonarQube, MariaDB de pruebas):
+# usa otro nombre de proyecto, otra red y otro volumen, y no toca nada de Cloudflare
+# (Pages, R2) porque el tunel rapido no necesita configuracion en la cuenta.
+#
+# Uso:
+#   copy .env.example .env      (y define las contrasenas)
+#   docker compose -f docker-compose.despliegue.yml up -d --build
+#   docker logs gestor-tunel    (muestra la URL publica)
+
+name: gestor-proyectos
+
+services:
+  gestor-db:
+    build: ./database
+    image: gestor-db:1.0
+    container_name: gestor-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Define DB_ROOT_PASSWORD en el archivo .env}
+      MARIADB_DATABASE: db_cbtis
+      MARIADB_USER: ${DB_USER:-gestor}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el archivo .env}
+    volumes:
+      - gestor-db-data:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3308:3306"   # solo para verificar desde este equipo; no se publica a internet
+    networks:
+      - gestor-net
+
+  gestor-api:
+    build: ./Ejercicio5MyAPIGestor
+    image: gestor-api:1.0
+    container_name: gestor-api
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:mariadb://gestor-db:3306/db_cbtis
+      DB_USER: ${DB_USER:-gestor}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      gestor-db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8091:8081"   # la API no se expone a internet; el cliente la consume por la red interna
+    networks:
+      - gestor-net
+
+  gestor-cliente:
+    build: ./Ejercicio5Cliente
+    image: gestor-cliente:1.0
+    container_name: gestor-cliente
+    restart: unless-stopped
+    environment:
+      API_URL: http://gestor-api:8081
+      SERVER_FORWARDHEADERSSTRATEGY: native   # respeta X-Forwarded-Proto (https) que envia el tunel
+    depends_on:
+      gestor-api:
+        condition: service_healthy
+    ports:
+      - "8092:8082"
+    networks:
+      - gestor-net
+
+  gestor-tunel:
+    image: cloudflare/cloudflared:latest
+    container_name: gestor-tunel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://gestor-cliente:8082
+    depends_on:
+      gestor-cliente:
+        condition: service_healthy
+    networks:
+      - gestor-net
+
+volumes:
+  gestor-db-data:
+
+networks:
+  gestor-net:
+    driver: bridge
