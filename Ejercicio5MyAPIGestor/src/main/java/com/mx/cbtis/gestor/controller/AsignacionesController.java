@@ -35,6 +35,11 @@ public class AsignacionesController {
 
 	@PostMapping("/updateAsignacion")
 	public int updateAsignacion(@RequestBody AsignacionRequest request) {
+		// Solo se actualiza un registro que ya existe: sin esta validacion, save() con un id
+		// inexistente insertaba un registro nuevo (falla detectada en las pruebas de endpoints).
+		if (request == null || request.idAsignacion() == null || !asignacionesRepository.existsById(request.idAsignacion())) {
+			return RespuestaApi.FALLO;
+		}
 		return guardar(request);
 	}
 

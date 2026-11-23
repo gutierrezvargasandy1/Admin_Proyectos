@@ -35,6 +35,11 @@ public class ProyectosController {
 
 	@PostMapping("/updateProyecto")
 	public int updateProyecto(@RequestBody ProyectoRequest request) {
+		// Solo se actualiza un registro que ya existe: sin esta validacion, save() con un id
+		// inexistente insertaba un registro nuevo (falla detectada en las pruebas de endpoints).
+		if (request == null || request.idProyecto() == null || !proyectosRepository.existsById(request.idProyecto())) {
+			return RespuestaApi.FALLO;
+		}
 		return guardar(request);
 	}
 

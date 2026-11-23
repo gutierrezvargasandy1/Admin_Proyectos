@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
@@ -209,5 +210,49 @@ class ApiWebMvcTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].correo_electronico").value("ana@cbtis.mx"))
 				.andExpect(jsonPath("$[0].contrasena").doesNotExist());
+	}
+
+	// ------------------------------------------------ Manejo de errores (ManejadorErrores)
+
+	@Test
+	@DisplayName("GET /buscarUsuario sin id regresa 400 con mensaje que indica el parametro")
+	void buscarUsuarioSinIdRegresaMensaje() throws Exception {
+		mockMvc.perform(get("/buscarUsuario"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.resultado").value(0))
+				.andExpect(jsonPath("$.error").value(ManejadorErrores.SOLICITUD_INVALIDA))
+				.andExpect(jsonPath("$.mensaje").value("Falta el parametro obligatorio 'id'."));
+	}
+
+	@Test
+	@DisplayName("GET /buscarUsuario con id no numerico regresa 400 con mensaje")
+	void buscarUsuarioIdNoNumerico() throws Exception {
+		mockMvc.perform(get("/buscarUsuario").param("id", "abc"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.resultado").value(0))
+				.andExpect(jsonPath("$.mensaje").value("El parametro 'id' debe ser un numero entero."));
+	}
+
+	@Test
+	@DisplayName("POST /addProyecto sin cuerpo regresa 400 con mensaje de JSON invalido")
+	void altaProyectoSinCuerpoRegresaMensaje() throws Exception {
+		mockMvc.perform(post("/addProyecto").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.mensaje").value(ManejadorErrores.MENSAJE_CUERPO));
+	}
+
+	@Test
+	@DisplayName("POST /addProyecto que viola una regla de la BD regresa 409 controlado")
+	void altaProyectoViolaIntegridad() throws Exception {
+		when(proyectosRepository.save(any(Proyectos.class)))
+				.thenThrow(new DataIntegrityViolationException("Column 'nombre' cannot be null"));
+
+		mockMvc.perform(post("/addProyecto")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"descripcion\":\"Sin nombre\"}"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.resultado").value(0))
+				.andExpect(jsonPath("$.error").value(ManejadorErrores.DATOS_INVALIDOS))
+				.andExpect(jsonPath("$.mensaje").value(ManejadorErrores.MENSAJE_INTEGRIDAD));
 	}
 }

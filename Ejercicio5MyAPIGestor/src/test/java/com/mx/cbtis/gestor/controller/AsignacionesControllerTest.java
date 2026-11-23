@@ -95,6 +95,7 @@ class AsignacionesControllerTest {
 	@DisplayName("Actualizacion: convierte el DTO a entidad, guarda y regresa 1")
 	void actualizacionExitosa() {
 		ArgumentCaptor<Asignaciones> captor = ArgumentCaptor.forClass(Asignaciones.class);
+		when(repository.existsById(5)).thenReturn(true);
 
 		assertThat(controller.updateAsignacion(peticion())).isEqualTo(RespuestaApi.EXITO);
 
@@ -106,6 +107,23 @@ class AsignacionesControllerTest {
 	@DisplayName("Actualizacion: con cuerpo nulo NO guarda y regresa 0")
 	void actualizacionNula() {
 		assertThat(controller.updateAsignacion(null)).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("Actualizacion: sin id NO guarda y regresa 0")
+	void actualizacionSinId() {
+		assertThat(controller.updateAsignacion(peticionSinId())).isEqualTo(RespuestaApi.FALLO);
+		verify(repository, never()).existsById(any());
+		verify(repository, never()).save(any());
+	}
+
+	@Test
+	@DisplayName("Actualizacion: id inexistente NO inserta un registro nuevo y regresa 0")
+	void actualizacionInexistente() {
+		when(repository.existsById(5)).thenReturn(false);
+
+		assertThat(controller.updateAsignacion(peticion())).isEqualTo(RespuestaApi.FALLO);
 		verify(repository, never()).save(any());
 	}
 

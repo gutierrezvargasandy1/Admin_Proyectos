@@ -66,7 +66,9 @@ public class UsuarioController {
 
 	@PostMapping("/updateUsuario")
 	public int updateUsuario(@RequestBody UsuarioRequest request) {
-		if (request == null) {
+		// Solo se actualiza un usuario que ya existe (antes un id inexistente intentaba
+		// insertar un registro nuevo y terminaba en error 500).
+		if (request == null || request.idUsuario() == null || !usuarioRepository.existsById(request.idUsuario())) {
 			return RespuestaApi.FALLO;
 		}
 		Usuario usuario = request.toEntity();
@@ -100,13 +102,8 @@ public class UsuarioController {
 	 * para no dejar al usuario sin acceso.
 	 */
 	private void conservarContrasenaActual(Usuario usuario) {
-		if (usuario.getIdUsuario() == null) {
-			return;
-		}
-		Optional<Usuario> actual = usuarioRepository.findById(usuario.getIdUsuario());
-		if (actual.isPresent()) {
-			usuario.setContrasena(actual.get().getContrasena());
-		}
+		usuarioRepository.findById(usuario.getIdUsuario())
+				.ifPresent(actual -> usuario.setContrasena(actual.getContrasena()));
 	}
 
 	private static Usuario usuarioNoValido() {

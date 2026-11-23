@@ -44,6 +44,11 @@ public class TareasController {
 
 	@PostMapping("/updateTareas")
 	public int updateTareas(@RequestBody TareaRequest request) {
+		// Solo se actualiza un registro que ya existe: sin esta validacion, save() con un id
+		// inexistente insertaba un registro nuevo (falla detectada en las pruebas de endpoints).
+		if (request == null || request.idTarea() == null || !tareasRepository.existsById(request.idTarea())) {
+			return RespuestaApi.FALLO;
+		}
 		return guardar(request);
 	}
 

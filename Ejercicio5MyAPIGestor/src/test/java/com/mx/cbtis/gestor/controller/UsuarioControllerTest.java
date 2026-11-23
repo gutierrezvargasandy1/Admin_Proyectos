@@ -191,6 +191,7 @@ class UsuarioControllerTest {
 	@Test
 	@DisplayName("Actualizacion: con contrasena nueva la guarda cifrada")
 	void actualizacionConContrasenaNueva() {
+		when(repository.existsById(10)).thenReturn(true);
 		UsuarioRequest cambios = new UsuarioRequest(10, "Ana Lopez", CORREO, "NuevaClave1", "Estudiante", "#70FAB7");
 
 		assertThat(controller.updateUsuario(cambios)).isEqualTo(RespuestaApi.EXITO);
@@ -203,6 +204,7 @@ class UsuarioControllerTest {
 	@DisplayName("Actualizacion: sin contrasena conserva el hash guardado")
 	void actualizacionSinContrasenaConservaHash() {
 		Usuario actual = usuarioGuardado();
+		when(repository.existsById(10)).thenReturn(true);
 		when(repository.findById(10)).thenReturn(Optional.of(actual));
 		UsuarioRequest cambios = new UsuarioRequest(10, "Ana L.", CORREO, null, "Docente", "#FFFFFF");
 
@@ -214,25 +216,25 @@ class UsuarioControllerTest {
 	}
 
 	@Test
-	@DisplayName("Actualizacion: sin contrasena y usuario inexistente guarda sin contrasena")
-	void actualizacionSinContrasenaUsuarioInexistente() {
-		when(repository.findById(50)).thenReturn(Optional.empty());
+	@DisplayName("Actualizacion: id inexistente regresa 0 y NO inserta un usuario nuevo")
+	void actualizacionUsuarioInexistente() {
+		when(repository.existsById(50)).thenReturn(false);
 		UsuarioRequest cambios = new UsuarioRequest(50, "Nuevo", "nuevo@cbtis.mx", "", "Estudiante", "#FFFFFF");
 
-		assertThat(controller.updateUsuario(cambios)).isEqualTo(RespuestaApi.EXITO);
+		assertThat(controller.updateUsuario(cambios)).isEqualTo(RespuestaApi.FALLO);
 
-		assertThat(capturarGuardado().getContrasena()).isEmpty();
+		verify(repository, never()).save(any());
 	}
 
 	@Test
-	@DisplayName("Actualizacion: sin contrasena y sin id no consulta la BD")
-	void actualizacionSinContrasenaSinId() {
+	@DisplayName("Actualizacion: sin id regresa 0 sin consultar la BD")
+	void actualizacionSinId() {
 		UsuarioRequest cambios = new UsuarioRequest(null, "Nuevo", "nuevo@cbtis.mx", null, "Estudiante", "#FFFFFF");
 
-		assertThat(controller.updateUsuario(cambios)).isEqualTo(RespuestaApi.EXITO);
+		assertThat(controller.updateUsuario(cambios)).isEqualTo(RespuestaApi.FALLO);
 
-		verify(repository, never()).findById(anyInt());
-		assertThat(capturarGuardado().getNombre()).isEqualTo("Nuevo");
+		verify(repository, never()).existsById(any());
+		verify(repository, never()).save(any());
 	}
 
 	@Test
