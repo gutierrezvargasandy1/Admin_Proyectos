@@ -1,0 +1,616 @@
+Pruebas de BD y endpoints - Gestor de Proyectos   etiqueta=antes
+API: http://localhost:8081   BD: user@127.0.0.1:3307/db_pruebas   inicio: 2026-11-22T22:33:15
+
+====================================================================================================
+  1. BASE DE DATOS: conexion, esquema y datos
+====================================================================================================
+[BD-01] Conexion a MariaDB y tablas del esquema
+   BD antes : SELECT VERSION() AS version, DATABASE() AS base_datos, CURRENT_USER() AS usuario  ->  [{"version": "10.11.19-MariaDB-ubu2204", "base_datos": "db_pruebas", "usuario": "user@%"}]
+   BD despues: SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME  ->  [{"TABLE_NAME": "asignaciones"}, {"TABLE_NAME": "comentarios"}, {"TABLE_NAME": "hibernate_sequence"}, {"TABLE_NAME": "proyectos"}, {"TABLE_NAME": "tareas"}, {"TABLE_NAME": "usuario"}]
+   Esperado : Conexion exitosa y 6 tablas (usuario, proyectos, tareas, asignaciones, comentarios, hibernate_sequence)
+   Obtenido : 6 tablas: asignaciones, comentarios, hibernate_sequence, proyectos, tareas, usuario
+   Estado   : PASA
+
+[BD-02] Registros existentes por tabla (datos semilla)
+   BD despues: SELECT (SELECT COUNT(*) FROM usuario) AS usuario, (SELECT COUNT(*) FROM proyectos) AS proyectos, (SELECT COUNT(*) FROM tareas) AS tareas, (SELECT COUNT(*) FROM asignaciones) AS asignaciones, (SELECT COUNT(*) FROM comentarios) AS comentarios  ->  [{"usuario": 3, "proyectos": 2, "tareas": 4, "asignaciones": 2, "comentarios": 3}]
+   Esperado : Todas las tablas de negocio con al menos 1 registro
+   Obtenido : Conteos: {'usuario': 3, 'proyectos': 2, 'tareas': 4, 'asignaciones': 2, 'comentarios': 3}
+   Estado   : PASA
+
+====================================================================================================
+  2. USUARIO  (/addUsuario /buscarUsuario /getUsuarioLogin /updateUsuario /buscarUsuarios /deleteUsuario)
+====================================================================================================
+[USR-01] Alta de usuario con datos validos (INSERT)
+   Peticion : POST http://localhost:8081/addUsuario
+   Enviado  : {"json": {"nombre": "Usuario Prueba 223315", "correo_electronico": "prueba.223315@ejemplo.com", "contrasena": "Prueba#2026", "rol": "Estudiante", "imagen_usuario": "#3366FF"}}
+   HTTP     : 200  (412 ms)   Respuesta: 1
+   BD antes : SELECT id_usuario, nombre, correo_electronico, LEFT(contrasena, 7) AS hash_inicio, rol FROM usuario WHERE correo_electronico = 'prueba.223315@ejemplo.com'  ->  []
+   BD despues: SELECT id_usuario, nombre, correo_electronico, LEFT(contrasena, 7) AS hash_inicio, rol FROM usuario WHERE correo_electronico = 'prueba.223315@ejemplo.com'  ->  [{"id_usuario": 1000, "nombre": "Usuario Prueba 223315", "correo_electronico": "prueba.223315@ejemplo.com", "hash_inicio": "$2a$10$", "rol": "Estudiante"}]
+   Esperado : HTTP 200, respuesta 1; el registro existe en la tabla usuario con la contrasena cifrada (BCrypt)
+   Obtenido : HTTP 200, respuesta '1'; filas antes=0, despues=1, hash=$2a$10$...
+   Estado   : PASA
+
+[USR-02] Alta de usuario sin contrasena (dato obligatorio faltante)
+   Peticion : POST http://localhost:8081/addUsuario
+   Enviado  : {"json": {"nombre": "Sin Clave", "correo_electronico": "sin.clave.223315@ejemplo.com", "rol": "Estudiante"}}
+   HTTP     : 200  (5 ms)   Respuesta: 0
+   BD despues: SELECT COUNT(*) AS registros FROM usuario WHERE correo_electronico = 'sin.clave.223315@ejemplo.com'  ->  [{"registros": 0}]
+   Esperado : HTTP 200, respuesta 0; no se inserta ningun registro
+   Obtenido : HTTP 200, respuesta '0'; registros despues=0
+   Estado   : PASA
+
+[USR-03] Alta de usuario con correo duplicado (restriccion UNIQUE)
+   Peticion : POST http://localhost:8081/addUsuario
+   Enviado  : {"json": {"nombre": "Ana Duplicada", "correo_electronico": "ana.demo@ejemplo.com", "contrasena": "Otra#123", "rol": "Estudiante"}}
+   HTTP     : 500  (172 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:16.214+00:00","status":500,"error":"Internal Server Error","path":"/addUsuario"}
+   BD antes : SELECT COUNT(*) AS registros FROM usuario WHERE correo_electronico = 'ana.demo@ejemplo.com'  ->  [{"registros": 1}]
+   BD despues: SELECT COUNT(*) AS registros FROM usuario WHERE correo_electronico = 'ana.demo@ejemplo.com'  ->  [{"registros": 1}]
+   Esperado : Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; el correo sigue registrado una sola vez
+   Obtenido : HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.214+00:00","status":500,"error":"Internal Server Error","path":"/addUsuario"}'; registros con ese correo=1
+   Estado   : FALLA
+
+[USR-04] Alta de usuario sin nombre (columna NOT NULL)
+   Peticion : POST http://localhost:8081/addUsuario
+   Enviado  : {"json": {"correo_electronico": "sin.nombre.223315@ejemplo.com", "contrasena": "Clave#123", "rol": "Estudiante"}}
+   HTTP     : 500  (142 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:16.369+00:00","status":500,"error":"Internal Server Error","path":"/addUsuario"}
+   BD despues: SELECT COUNT(*) AS registros FROM usuario WHERE correo_electronico = 'sin.nombre.223315@ejemplo.com'  ->  [{"registros": 0}]
+   Esperado : Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no se inserta el registro
+   Obtenido : HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.369+00:00","status":500,"error":"Internal Server Error","path":"/addUsuario"}'; registros=0
+   Estado   : FALLA
+
+[USR-05] Alta de usuario con JSON mal formado
+   Peticion : POST http://localhost:8081/addUsuario
+   Enviado  : {"crudo": "{\"nombre\": \"Incompleto\", "}
+   HTTP     : 400  (6 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:16.377+00:00","status":400,"error":"Bad Request","path":"/addUsuario"}
+   Esperado : Error controlado: HTTP 400 con JSON {resultado:0, mensaje}
+   Obtenido : HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.377+00:00","status":400,"error":"Bad Request","path":"/addUsuario"}'
+   Estado   : FALLA
+
+[USR-06] Buscar usuario por id existente (SELECT)
+   Peticion : GET http://localhost:8081/buscarUsuario?id=1000
+   Enviado  : {"query": {"id": 1000}}
+   HTTP     : 200  (79 ms)   Respuesta: {"nombre":"Usuario Prueba 223315","rol":"Estudiante","id_usuario":1000,"correo_electronico":"prueba.223315@ejemplo.com","imagen_usuario":"#3366FF"}
+   BD despues: SELECT id_usuario, nombre, correo_electronico, LEFT(contrasena, 7) AS hash_inicio, rol FROM usuario WHERE correo_electronico = 'prueba.223315@ejemplo.com'  ->  [{"id_usuario": 1000, "nombre": "Usuario Prueba 223315", "correo_electronico": "prueba.223315@ejemplo.com", "hash_inicio": "$2a$10$", "rol": "Estudiante"}]
+   Esperado : HTTP 200; JSON del usuario creado y SIN el campo contrasena
+   Obtenido : HTTP 200, id_usuario=1000, nombre='Usuario Prueba 223315', contrasena presente=False
+   Estado   : PASA
+
+[USR-07] Buscar usuario con id inexistente
+   Peticion : GET http://localhost:8081/buscarUsuario?id=999999
+   Enviado  : {"query": {"id": 999999}}
+   HTTP     : 200  (10 ms)   Respuesta: {"nombre":null,"rol":null,"id_usuario":null,"correo_electronico":null,"imagen_usuario":null}
+   BD despues: SELECT COUNT(*) AS registros FROM usuario WHERE id_usuario = 999999  ->  [{"registros": 0}]
+   Esperado : HTTP 200; objeto vacio (id_usuario = null)
+   Obtenido : HTTP 200, id_usuario=None; registros en BD=0
+   Estado   : PASA
+
+[USR-08] Buscar usuario SIN el parametro id
+   Peticion : GET http://localhost:8081/buscarUsuario
+   HTTP     : 400  (6 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:16.478+00:00","status":400,"error":"Bad Request","path":"/buscarUsuario"}
+   Esperado : Error controlado: HTTP 400 con mensaje que indique el parametro faltante 'id'
+   Obtenido : HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.478+00:00","status":400,"error":"Bad Request","path":"/buscarUsuario"}'
+   Estado   : FALLA
+
+[USR-09] Buscar usuario con id no numerico
+   Peticion : GET http://localhost:8081/buscarUsuario?id=abc
+   Enviado  : {"query": {"id": "abc"}}
+   HTTP     : 400  (6 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:16.485+00:00","status":400,"error":"Bad Request","path":"/buscarUsuario"}
+   Esperado : Error controlado: HTTP 400 con mensaje que indique que 'id' debe ser numerico
+   Obtenido : HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.485+00:00","status":400,"error":"Bad Request","path":"/buscarUsuario"}'
+   Estado   : FALLA
+
+[USR-10] Login con credenciales validas
+   Peticion : POST http://localhost:8081/getUsuarioLogin
+   Enviado  : {"json": {"correo_electronico": "prueba.223315@ejemplo.com", "contrasena": "Prueba#2026"}}
+   HTTP     : 200  (234 ms)   Respuesta: {"nombre":"Usuario Prueba 223315","rol":"Estudiante","id_usuario":1000,"correo_electronico":"prueba.223315@ejemplo.com","imagen_usuario":"#3366FF"}
+   Esperado : HTTP 200; JSON del usuario autenticado, sin contrasena
+   Obtenido : HTTP 200, nombre='Usuario Prueba 223315', contrasena presente=False
+   Estado   : PASA
+
+[USR-11] Login con contrasena incorrecta
+   Peticion : POST http://localhost:8081/getUsuarioLogin
+   Enviado  : {"json": {"correo_electronico": "prueba.223315@ejemplo.com", "contrasena": "Incorrecta#1"}}
+   HTTP     : 200  (117 ms)   Respuesta: {"nombre":"000","rol":null,"id_usuario":null,"correo_electronico":null,"imagen_usuario":null}
+   Esperado : HTTP 200; usuario centinela con nombre = '000' (acceso rechazado)
+   Obtenido : HTTP 200, nombre='000'
+   Estado   : PASA
+
+[USR-12] Login con correo no registrado
+   Peticion : POST http://localhost:8081/getUsuarioLogin
+   Enviado  : {"json": {"correo_electronico": "no.existe.223315@ejemplo.com", "contrasena": "Prueba#2026"}}
+   HTTP     : 200  (22 ms)   Respuesta: {"nombre":"000","rol":null,"id_usuario":null,"correo_electronico":null,"imagen_usuario":null}
+   Esperado : HTTP 200; nombre = '000'
+   Obtenido : HTTP 200, nombre='000'
+   Estado   : PASA
+
+[USR-13] Login con campos vacios
+   Peticion : POST http://localhost:8081/getUsuarioLogin
+   Enviado  : {"json": {"correo_electronico": "", "contrasena": ""}}
+   HTTP     : 200  (28 ms)   Respuesta: {"nombre":"000","rol":null,"id_usuario":null,"correo_electronico":null,"imagen_usuario":null}
+   Esperado : HTTP 200; nombre = '000' sin consultar credenciales
+   Obtenido : HTTP 200, nombre='000'
+   Estado   : PASA
+
+[USR-14] Actualizar usuario existente sin enviar contrasena (UPDATE)
+   Peticion : POST http://localhost:8081/updateUsuario
+   Enviado  : {"json": {"id_usuario": 1000, "nombre": "Usuario Prueba 223315 (editado)", "correo_electronico": "prueba.223315@ejemplo.com", "rol": "Docente", "imagen_usuario": "#3366FF"}}
+   HTTP     : 200  (46 ms)   Respuesta: 1
+   BD antes : SELECT id_usuario, nombre, rol, LEFT(contrasena, 20) AS hash_inicio FROM usuario WHERE id_usuario = 1000  ->  [{"id_usuario": 1000, "nombre": "Usuario Prueba 223315", "rol": "Estudiante", "hash_inicio": "$2a$10$h4nYDv9DvtEA5"}]
+   BD despues: SELECT id_usuario, nombre, rol, LEFT(contrasena, 20) AS hash_inicio FROM usuario WHERE id_usuario = 1000  ->  [{"id_usuario": 1000, "nombre": "Usuario Prueba 223315 (editado)", "rol": "Docente", "hash_inicio": "$2a$10$h4nYDv9DvtEA5"}]
+   Esperado : HTTP 200, respuesta 1; cambian nombre y rol y se conserva el mismo hash de contrasena
+   Obtenido : HTTP 200, respuesta '1'; nombre='Usuario Prueba 223315 (editado)', rol='Docente', hash conservado=True
+   Estado   : PASA
+
+[USR-15] Actualizar usuario con id inexistente
+   Peticion : POST http://localhost:8081/updateUsuario
+   Enviado  : {"json": {"id_usuario": 999999, "nombre": "Fantasma", "correo_electronico": "fantasma.223315@ejemplo.com", "rol": "Estudiante"}}
+   HTTP     : 500  (55 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:16.999+00:00","status":500,"error":"Internal Server Error","path":"/updateUsuario"}
+   BD antes : SELECT (SELECT COUNT(*) FROM usuario) AS total_usuarios, (SELECT COUNT(*) FROM usuario WHERE correo_electronico = 'fantasma.223315@ejemplo.com') AS con_ese_correo  ->  [{"total_usuarios": 4, "con_ese_correo": 0}]
+   BD despues: SELECT (SELECT COUNT(*) FROM usuario) AS total_usuarios, (SELECT COUNT(*) FROM usuario WHERE correo_electronico = 'fantasma.223315@ejemplo.com') AS con_ese_correo  ->  [{"total_usuarios": 4, "con_ese_correo": 0}]
+   Esperado : HTTP 200, respuesta 0; NO se inserta un usuario nuevo
+   Obtenido : HTTP 500, respuesta '{"timestamp":"2026-11-23T04:33:16.999+00:00","status":500,"error":"Internal Server Error","path":"/updateUsuario"}'; usuarios antes=4, despues=4
+   Estado   : FALLA
+
+[USR-16] Listar todos los usuarios
+   Peticion : POST http://localhost:8081/buscarUsuarios
+   HTTP     : 200  (15 ms)   Respuesta: [{"nombre":"Ana Demo","rol":"Estudiante","id_usuario":1,"correo_electronico":"ana.demo@ejemplo.com","imagen_usuario":"#70FAB7"},{"nombre":"Luis Demo","rol":"Estudiante","id_usuario":2,"correo_electronico":"luis.demo@ejemplo.com","imagen_usuario":"#54EA01"},{"nombre":"Docente Demo","rol":"Docente","i ...
+   BD despues: SELECT COUNT(*) AS total FROM usuario  ->  [{"total": 4}]
+   Esperado : HTTP 200; arreglo con el mismo numero de registros que la tabla y ninguno expone la contrasena
+   Obtenido : HTTP 200, 4 usuarios en la respuesta, 4 en la BD; alguno con contrasena=False
+   Estado   : PASA
+
+[USR-17] Eliminar usuario existente (DELETE)
+   Peticion : DELETE http://localhost:8081/deleteUsuario
+   Enviado  : {"json": {"id_usuario": 1000}}
+   HTTP     : 200  (28 ms)   Respuesta: 1
+   BD antes : SELECT COUNT(*) AS registros FROM usuario WHERE id_usuario = 1000  ->  [{"registros": 1}]
+   BD despues: SELECT COUNT(*) AS registros FROM usuario WHERE id_usuario = 1000  ->  [{"registros": 0}]
+   Esperado : HTTP 200, respuesta 1; el registro ya no existe en la tabla
+   Obtenido : HTTP 200, respuesta '1'; registros antes=1, despues=0
+   Estado   : PASA
+
+[USR-18] Eliminar usuario con id inexistente
+   Peticion : DELETE http://localhost:8081/deleteUsuario
+   Enviado  : {"json": {"id_usuario": 999999}}
+   HTTP     : 200  (30 ms)   Respuesta: 0
+   Esperado : HTTP 200, respuesta 0; no se elimina nada
+   Obtenido : HTTP 200, respuesta '0'
+   Estado   : PASA
+
+====================================================================================================
+  3. PROYECTOS  (/addProyecto /buscarProyecto /updateProyecto /buscarProyectos /deleteProyecto)
+====================================================================================================
+[PRY-01] Alta de proyecto con JSON valido (INSERT)
+   Peticion : POST http://localhost:8081/addProyecto
+   Enviado  : {"json": {"nombre": "Proyecto Prueba 223315", "descripcion": "Proyecto creado por la suite de pruebas", "fecha_inicio": "2026-11-01", "fecha_finalizacion": "2026-12-15", "estado_proyecto": "En proceso", "fondo": "/Images/azulReal.png"}}
+   HTTP     : 200  (27 ms)   Respuesta: 1
+   BD antes : SELECT id_proyecto, nombre, estado_proyecto, fecha_inicio, fecha_finalizacion FROM proyectos WHERE nombre = 'Proyecto Prueba 223315'  ->  []
+   BD despues: SELECT id_proyecto, nombre, estado_proyecto, fecha_inicio, fecha_finalizacion FROM proyectos WHERE nombre = 'Proyecto Prueba 223315'  ->  [{"id_proyecto": 1004, "nombre": "Proyecto Prueba 223315", "estado_proyecto": "En proceso", "fecha_inicio": "2026-11-01", "fecha_finalizacion": "2026-12-15"}]
+   Esperado : HTTP 200, respuesta 1; el proyecto existe en la tabla proyectos
+   Obtenido : HTTP 200, respuesta '1'; filas antes=0, despues=1, id_proyecto=1004
+   Estado   : PASA
+
+[PRY-02] Alta de proyecto sin nombre (columna NOT NULL)
+   Peticion : POST http://localhost:8081/addProyecto
+   Enviado  : {"json": {"descripcion": "Sin nombre", "estado_proyecto": "En proceso"}}
+   HTTP     : 500  (23 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:17.136+00:00","status":500,"error":"Internal Server Error","path":"/addProyecto"}
+   BD antes : SELECT COUNT(*) AS total FROM proyectos  ->  [{"total": 3}]
+   BD despues: SELECT COUNT(*) AS total FROM proyectos  ->  [{"total": 3}]
+   Esperado : Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no cambia el numero de proyectos
+   Obtenido : HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.136+00:00","status":500,"error":"Internal Server Error","path":"/addProyecto"}'; proyectos antes=3, despues=3
+   Estado   : FALLA
+
+[PRY-03] Alta de proyecto con fecha invalida (2026-13-45)
+   Peticion : POST http://localhost:8081/addProyecto
+   Enviado  : {"json": {"nombre": "Fecha Invalida 223315", "fecha_inicio": "2026-13-45", "estado_proyecto": "En proceso"}}
+   HTTP     : 500  (21 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:17.159+00:00","status":500,"error":"Internal Server Error","path":"/addProyecto"}
+   BD despues: SELECT COUNT(*) AS registros FROM proyectos WHERE nombre = 'Fecha Invalida 223315'  ->  [{"registros": 0}]
+   Esperado : Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no se inserta el registro
+   Obtenido : HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.159+00:00","status":500,"error":"Internal Server Error","path":"/addProyecto"}'; registros=0
+   Estado   : FALLA
+
+[PRY-04] Buscar proyecto por id existente
+   Peticion : GET http://localhost:8081/buscarProyecto?id_proyecto=1004
+   Enviado  : {"query": {"id_proyecto": 1004}}
+   HTTP     : 200  (11 ms)   Respuesta: {"nombre":"Proyecto Prueba 223315","descripcion":"Proyecto creado por la suite de pruebas","fondo":"/Images/azulReal.png","id_proyecto":1004,"fecha_inicio":"2026-11-01","fecha_finalizacion":"2026-12-15","estado_proyecto":"En proceso"}
+   BD despues: SELECT id_proyecto, nombre, estado_proyecto, fecha_inicio, fecha_finalizacion FROM proyectos WHERE nombre = 'Proyecto Prueba 223315'  ->  [{"id_proyecto": 1004, "nombre": "Proyecto Prueba 223315", "estado_proyecto": "En proceso", "fecha_inicio": "2026-11-01", "fecha_finalizacion": "2026-12-15"}]
+   Esperado : HTTP 200; JSON con el proyecto creado
+   Obtenido : HTTP 200, id_proyecto=1004, nombre='Proyecto Prueba 223315'
+   Estado   : PASA
+
+[PRY-05] Buscar proyecto con id inexistente
+   Peticion : GET http://localhost:8081/buscarProyecto?id_proyecto=999999
+   Enviado  : {"query": {"id_proyecto": 999999}}
+   HTTP     : 200  (8 ms)   Respuesta: {"nombre":null,"descripcion":null,"fondo":null,"id_proyecto":null,"fecha_inicio":null,"fecha_finalizacion":null,"estado_proyecto":null}
+   Esperado : HTTP 200; objeto vacio (id_proyecto = null)
+   Obtenido : HTTP 200, id_proyecto=None
+   Estado   : PASA
+
+[PRY-06] Buscar proyecto SIN el parametro id_proyecto
+   Peticion : GET http://localhost:8081/buscarProyecto
+   HTTP     : 400  (5 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:17.188+00:00","status":400,"error":"Bad Request","path":"/buscarProyecto"}
+   Esperado : Error controlado: HTTP 400 con mensaje que indique el parametro faltante 'id_proyecto'
+   Obtenido : HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.188+00:00","status":400,"error":"Bad Request","path":"/buscarProyecto"}'
+   Estado   : FALLA
+
+[PRY-07] Actualizar proyecto existente (UPDATE)
+   Peticion : POST http://localhost:8081/updateProyecto
+   Enviado  : {"json": {"id_proyecto": 1004, "nombre": "Proyecto Prueba 223315", "descripcion": "Proyecto creado por la suite de pruebas", "fecha_inicio": "2026-11-01", "fecha_finalizacion": "2026-12-15", "estado_proyecto": "Terminado", "fondo": "/Images/azulReal.png"}}
+   HTTP     : 200  (14 ms)   Respuesta: 1
+   BD antes : SELECT id_proyecto, nombre, estado_proyecto FROM proyectos WHERE id_proyecto = 1004  ->  [{"id_proyecto": 1004, "nombre": "Proyecto Prueba 223315", "estado_proyecto": "En proceso"}]
+   BD despues: SELECT id_proyecto, nombre, estado_proyecto FROM proyectos WHERE id_proyecto = 1004  ->  [{"id_proyecto": 1004, "nombre": "Proyecto Prueba 223315", "estado_proyecto": "Terminado"}]
+   Esperado : HTTP 200, respuesta 1; estado_proyecto cambia a 'Terminado'
+   Obtenido : HTTP 200, respuesta '1'; estado antes='En proceso', despues='Terminado'
+   Estado   : PASA
+
+[PRY-08] Actualizar proyecto con id inexistente
+   Peticion : POST http://localhost:8081/updateProyecto
+   Enviado  : {"json": {"id_proyecto": 999999, "nombre": "Proyecto Fantasma 223315", "estado_proyecto": "En proceso"}}
+   HTTP     : 200  (36 ms)   Respuesta: 1
+   BD antes : SELECT (SELECT COUNT(*) FROM proyectos) AS total, (SELECT COUNT(*) FROM proyectos WHERE nombre = 'Proyecto Fantasma 223315') AS con_ese_nombre  ->  [{"total": 3, "con_ese_nombre": 0}]
+   BD despues: SELECT (SELECT COUNT(*) FROM proyectos) AS total, (SELECT COUNT(*) FROM proyectos WHERE nombre = 'Proyecto Fantasma 223315') AS con_ese_nombre  ->  [{"total": 4, "con_ese_nombre": 1}]
+   Esperado : HTTP 200, respuesta 0; NO se inserta un proyecto nuevo
+   Obtenido : HTTP 200, respuesta '1'; proyectos antes=3, despues=4, insertados con ese nombre=1
+   Estado   : FALLA
+
+[PRY-09] Listar todos los proyectos
+   Peticion : POST http://localhost:8081/buscarProyectos
+   HTTP     : 200  (37 ms)   Respuesta: [{"nombre":"My API Rest","descripcion":"API REST para un sistema de informacion con al menos 5 tablas","fondo":"/Images/animacion1.gif","id_proyecto":1,"fecha_inicio":"2026-08-31","fecha_finalizacion":"2026-11-29","estado_proyecto":"En proceso"},{"nombre":"Portal Web","descripcion":"Interfaz web del ...
+   BD despues: SELECT COUNT(*) AS total FROM proyectos  ->  [{"total": 4}]
+   Esperado : HTTP 200; arreglo con el mismo numero de registros que la tabla proyectos
+   Obtenido : HTTP 200, 4 proyectos en la respuesta, 4 en la BD
+   Estado   : PASA
+
+====================================================================================================
+  4. TAREAS  (/addTareas /getTarea /buscarTarea /updateTareas /buscarTareas /deleteTareas)
+====================================================================================================
+[TAR-01] Alta de tarea ligada a un proyecto (relacion proyecto-tarea)
+   Peticion : POST http://localhost:8081/addTareas
+   Enviado  : {"json": {"nombre": "Tarea Prueba 223315", "descripcion": "Tarea de la suite", "fecha_vencimiento": "2026-12-01", "lista": "pendientes", "estado": "warning", "id_proyecto": 1004}}
+   HTTP     : 200  (24 ms)   Respuesta: 1
+   BD antes : SELECT id_tarea, nombre, lista, estado, id_proyecto FROM tareas WHERE nombre = 'Tarea Prueba 223315'  ->  []
+   BD despues: SELECT id_tarea, nombre, lista, estado, id_proyecto FROM tareas WHERE nombre = 'Tarea Prueba 223315'  ->  [{"id_tarea": 1008, "nombre": "Tarea Prueba 223315", "lista": "pendientes", "estado": "warning", "id_proyecto": 1004}]
+   Esperado : HTTP 200, respuesta 1; la tarea existe con id_proyecto del proyecto creado
+   Obtenido : HTTP 200, respuesta '1'; filas despues=1, id_tarea=1008, id_proyecto=1004
+   Estado   : PASA
+
+[TAR-02] Alta de tarea con id_proyecto inexistente (llave foranea)
+   Peticion : POST http://localhost:8081/addTareas
+   Enviado  : {"json": {"nombre": "Tarea Huerfana 223315", "lista": "pendientes", "estado": "danger", "id_proyecto": 999999}}
+   HTTP     : 500  (25 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:17.337+00:00","status":500,"error":"Internal Server Error","path":"/addTareas"}
+   BD despues: SELECT COUNT(*) AS registros FROM tareas WHERE nombre = 'Tarea Huerfana 223315'  ->  [{"registros": 0}]
+   Esperado : Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no se crea una tarea huerfana
+   Obtenido : HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.337+00:00","status":500,"error":"Internal Server Error","path":"/addTareas"}'; registros=0
+   Estado   : FALLA
+
+[TAR-03] Listar tareas de un proyecto (consulta por id_proyecto)
+   Peticion : POST http://localhost:8081/getTarea
+   Enviado  : {"json": {"id_proyecto": 1004}}
+   HTTP     : 200  (14 ms)   Respuesta: [{"nombre":"Tarea Prueba 223315","descripcion":"Tarea de la suite","lista":"pendientes","estado":"warning","id_tarea":1008,"fecha_vencimiento":"2026-12-01","id_proyecto":1004}]
+   BD despues: SELECT id_tarea, nombre FROM tareas WHERE id_proyecto = 1004  ->  [{"id_tarea": 1008, "nombre": "Tarea Prueba 223315"}]
+   Esperado : HTTP 200; arreglo con las tareas del proyecto, igual a lo que hay en la BD
+   Obtenido : HTTP 200, 1 tarea(s) en la respuesta, 1 en la BD
+   Estado   : PASA
+
+[TAR-04] Listar tareas de un proyecto inexistente
+   Peticion : POST http://localhost:8081/getTarea
+   Enviado  : {"json": {"id_proyecto": 999999}}
+   HTTP     : 200  (27 ms)   Respuesta: []
+   Esperado : HTTP 200; arreglo vacio []
+   Obtenido : HTTP 200, respuesta '[]'
+   Estado   : PASA
+
+[TAR-05] Listar tareas sin enviar id_proyecto
+   Peticion : POST http://localhost:8081/getTarea
+   Enviado  : {"json": {}}
+   HTTP     : 200  (5 ms)   Respuesta: []
+   Esperado : HTTP 200; arreglo vacio [] (filtro nulo controlado)
+   Obtenido : HTTP 200, respuesta '[]'
+   Estado   : PASA
+
+[TAR-06] Buscar tarea por id existente
+   Peticion : GET http://localhost:8081/buscarTarea?id_tarea=1008
+   Enviado  : {"query": {"id_tarea": 1008}}
+   HTTP     : 200  (26 ms)   Respuesta: {"nombre":"Tarea Prueba 223315","descripcion":"Tarea de la suite","lista":"pendientes","estado":"warning","id_tarea":1008,"fecha_vencimiento":"2026-12-01","id_proyecto":1004}
+   Esperado : HTTP 200; JSON con la tarea creada
+   Obtenido : HTTP 200, id_tarea=1008, nombre='Tarea Prueba 223315'
+   Estado   : PASA
+
+[TAR-07] Buscar tarea con id no numerico
+   Peticion : GET http://localhost:8081/buscarTarea?id_tarea=abc
+   Enviado  : {"query": {"id_tarea": "abc"}}
+   HTTP     : 400  (27 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:17.445+00:00","status":400,"error":"Bad Request","path":"/buscarTarea"}
+   Esperado : Error controlado: HTTP 400 con mensaje que indique que 'id_tarea' debe ser numerico
+   Obtenido : HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.445+00:00","status":400,"error":"Bad Request","path":"/buscarTarea"}'
+   Estado   : FALLA
+
+[TAR-08] Actualizar tarea existente (mover a 'terminado')
+   Peticion : POST http://localhost:8081/updateTareas
+   Enviado  : {"json": {"id_tarea": 1008, "nombre": "Tarea Prueba 223315", "descripcion": "Tarea de la suite", "fecha_vencimiento": "2026-12-01", "lista": "terminado", "estado": "success", "id_proyecto": 1004}}
+   HTTP     : 200  (24 ms)   Respuesta: 1
+   BD antes : SELECT id_tarea, lista, estado FROM tareas WHERE id_tarea = 1008  ->  [{"id_tarea": 1008, "lista": "pendientes", "estado": "warning"}]
+   BD despues: SELECT id_tarea, lista, estado FROM tareas WHERE id_tarea = 1008  ->  [{"id_tarea": 1008, "lista": "terminado", "estado": "success"}]
+   Esperado : HTTP 200, respuesta 1; lista = 'terminado' y estado = 'success'
+   Obtenido : HTTP 200, respuesta '1'; lista 'pendientes' -> 'terminado'
+   Estado   : PASA
+
+[TAR-09] Actualizar tarea con id inexistente
+   Peticion : POST http://localhost:8081/updateTareas
+   Enviado  : {"json": {"id_tarea": 999999, "nombre": "Tarea Fantasma 223315", "lista": "pendientes", "estado": "danger", "id_proyecto": 1004}}
+   HTTP     : 200  (31 ms)   Respuesta: 1
+   BD antes : SELECT (SELECT COUNT(*) FROM tareas) AS total, (SELECT COUNT(*) FROM tareas WHERE nombre = 'Tarea Fantasma 223315') AS con_ese_nombre  ->  [{"total": 5, "con_ese_nombre": 0}]
+   BD despues: SELECT (SELECT COUNT(*) FROM tareas) AS total, (SELECT COUNT(*) FROM tareas WHERE nombre = 'Tarea Fantasma 223315') AS con_ese_nombre  ->  [{"total": 6, "con_ese_nombre": 1}]
+   Esperado : HTTP 200, respuesta 0; NO se inserta una tarea nueva
+   Obtenido : HTTP 200, respuesta '1'; tareas antes=5, despues=6
+   Estado   : FALLA
+
+[TAR-10] Listar todas las tareas
+   Peticion : POST http://localhost:8081/buscarTareas
+   HTTP     : 200  (38 ms)   Respuesta: [{"nombre":"Base de datos","descripcion":"Estructura de las tablas","lista":"terminado","estado":"danger","id_tarea":1,"fecha_vencimiento":"2026-09-13","id_proyecto":1},{"nombre":"Endpoints","descripcion":"CRUD de las 5 entidades","lista":"encurso","estado":"warning","id_tarea":2,"fecha_vencimiento" ...
+   BD despues: SELECT COUNT(*) AS total FROM tareas  ->  [{"total": 6}]
+   Esperado : HTTP 200; arreglo con el mismo numero de registros que la tabla tareas
+   Obtenido : HTTP 200, 6 tareas en la respuesta, 6 en la BD
+   Estado   : PASA
+
+====================================================================================================
+  5. ASIGNACIONES  (/addAsignacion /buscarAsignacion /updateAsignacion /buscarAsignaciones /deleteAsignacion)
+====================================================================================================
+[ASG-01] Asignar la tarea creada al usuario 1 (INSERT)
+   Peticion : POST http://localhost:8081/addAsignacion
+   Enviado  : {"json": {"id_usuario": 1, "id_tarea": 1008, "fecha_asignacion": "2026-11-22"}}
+   HTTP     : 200  (49 ms)   Respuesta: 1
+   BD antes : SELECT id_asignacion, id_usuario, id_tarea, fecha_asignacion FROM asignaciones WHERE id_tarea = 1008  ->  []
+   BD despues: SELECT id_asignacion, id_usuario, id_tarea, fecha_asignacion FROM asignaciones WHERE id_tarea = 1008  ->  [{"id_asignacion": 1011, "id_usuario": 1, "id_tarea": 1008, "fecha_asignacion": "2026-11-22"}]
+   Esperado : HTTP 200, respuesta 1; la asignacion existe con id_usuario=1 e id_tarea de la tarea creada
+   Obtenido : HTTP 200, respuesta '1'; filas antes=0, despues=1
+   Estado   : PASA
+
+[ASG-02] Asignar a un usuario inexistente (llave foranea)
+   Peticion : POST http://localhost:8081/addAsignacion
+   Enviado  : {"json": {"id_usuario": 999999, "id_tarea": 1008, "fecha_asignacion": "2026-11-22"}}
+   HTTP     : 500  (46 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:17.650+00:00","status":500,"error":"Internal Server Error","path":"/addAsignacion"}
+   BD antes : SELECT COUNT(*) AS total FROM asignaciones  ->  [{"total": 3}]
+   BD despues: SELECT COUNT(*) AS total FROM asignaciones  ->  [{"total": 3}]
+   Esperado : Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no cambia el numero de asignaciones
+   Obtenido : HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.650+00:00","status":500,"error":"Internal Server Error","path":"/addAsignacion"}'; asignaciones antes=3, despues=3
+   Estado   : FALLA
+
+[ASG-03] Buscar asignacion por id existente
+   Peticion : GET http://localhost:8081/buscarAsignacion?id=1011
+   Enviado  : {"query": {"id": 1011}}
+   HTTP     : 200  (10 ms)   Respuesta: {"id_asignacion":1011,"id_usuario":1,"id_tarea":1008,"fecha_asignacion":"2026-11-22"}
+   Esperado : HTTP 200; JSON con la asignacion creada
+   Obtenido : HTTP 200, id_asignacion=1011, id_tarea=1008
+   Estado   : PASA
+
+[ASG-04] Buscar asignacion con id inexistente
+   Peticion : GET http://localhost:8081/buscarAsignacion?id=999999
+   Enviado  : {"query": {"id": 999999}}
+   HTTP     : 200  (6 ms)   Respuesta: {"id_asignacion":null,"id_usuario":null,"id_tarea":null,"fecha_asignacion":null}
+   Esperado : HTTP 200; objeto vacio (id_asignacion = null)
+   Obtenido : HTTP 200, id_asignacion=None
+   Estado   : PASA
+
+[ASG-05] Actualizar fecha de una asignacion existente
+   Peticion : POST http://localhost:8081/updateAsignacion
+   Enviado  : {"json": {"id_asignacion": 1011, "id_usuario": 1, "id_tarea": 1008, "fecha_asignacion": "2026-11-30"}}
+   HTTP     : 200  (34 ms)   Respuesta: 1
+   BD antes : SELECT id_asignacion, fecha_asignacion FROM asignaciones WHERE id_asignacion = 1011  ->  [{"id_asignacion": 1011, "fecha_asignacion": "2026-11-22"}]
+   BD despues: SELECT id_asignacion, fecha_asignacion FROM asignaciones WHERE id_asignacion = 1011  ->  [{"id_asignacion": 1011, "fecha_asignacion": "2026-11-30"}]
+   Esperado : HTTP 200, respuesta 1; fecha_asignacion = 2026-11-30
+   Obtenido : HTTP 200, respuesta '1'; fecha 2026-11-22 -> 2026-11-30
+   Estado   : PASA
+
+[ASG-06] Actualizar asignacion con id inexistente
+   Peticion : POST http://localhost:8081/updateAsignacion
+   Enviado  : {"json": {"id_asignacion": 999999, "id_usuario": 1, "id_tarea": 1008, "fecha_asignacion": "2026-11-30"}}
+   HTTP     : 200  (16 ms)   Respuesta: 1
+   BD antes : SELECT COUNT(*) AS total FROM asignaciones  ->  [{"total": 3}]
+   BD despues: SELECT COUNT(*) AS total FROM asignaciones  ->  [{"total": 4}]
+   Esperado : HTTP 200, respuesta 0; NO se inserta una asignacion nueva
+   Obtenido : HTTP 200, respuesta '1'; asignaciones antes=3, despues=4
+   Estado   : FALLA
+
+[ASG-07] Listar todas las asignaciones
+   Peticion : POST http://localhost:8081/buscarAsignaciones
+   HTTP     : 200  (38 ms)   Respuesta: [{"id_asignacion":1,"id_usuario":1,"id_tarea":1,"fecha_asignacion":"2026-09-01"},{"id_asignacion":2,"id_usuario":2,"id_tarea":2,"fecha_asignacion":"2026-09-20"},{"id_asignacion":1011,"id_usuario":1,"id_tarea":1008,"fecha_asignacion":"2026-11-30"},{"id_asignacion":1013,"id_usuario":1,"id_tarea":1008, ...
+   BD despues: SELECT COUNT(*) AS total FROM asignaciones  ->  [{"total": 4}]
+   Esperado : HTTP 200; arreglo con el mismo numero de registros que la tabla asignaciones
+   Obtenido : HTTP 200, 4 asignaciones en la respuesta, 4 en la BD
+   Estado   : PASA
+
+[ASG-08] Eliminar asignacion existente
+   Peticion : DELETE http://localhost:8081/deleteAsignacion
+   Enviado  : {"json": {"id_asignacion": 1011}}
+   HTTP     : 200  (15 ms)   Respuesta: 1
+   BD antes : SELECT COUNT(*) AS registros FROM asignaciones WHERE id_asignacion = 1011  ->  [{"registros": 1}]
+   BD despues: SELECT COUNT(*) AS registros FROM asignaciones WHERE id_asignacion = 1011  ->  [{"registros": 0}]
+   Esperado : HTTP 200, respuesta 1; el registro ya no existe
+   Obtenido : HTTP 200, respuesta '1'; registros antes=1, despues=0
+   Estado   : PASA
+
+[ASG-09] Eliminar asignacion con id inexistente
+   Peticion : DELETE http://localhost:8081/deleteAsignacion
+   Enviado  : {"json": {"id_asignacion": 999999}}
+   HTTP     : 200  (23 ms)   Respuesta: 0
+   Esperado : HTTP 200, respuesta 0
+   Obtenido : HTTP 200, respuesta '0'
+   Estado   : PASA
+
+====================================================================================================
+  6. COMENTARIOS  (/addComentario /getComentario /buscarComentario /updateComentario /buscarComentarios /deleteComentario)
+====================================================================================================
+[COM-01] Alta de comentario en la tarea creada (INSERT)
+   Peticion : POST http://localhost:8081/addComentario
+   Enviado  : {"json": {"id_usuario": "Ana Demo", "id_tarea": 1008, "texto_comentario": "Comentario de prueba 223315", "fecha_hora": "2026-11-22 10:30:00"}}
+   HTTP     : 200  (40 ms)   Respuesta: 1
+   BD antes : SELECT id_comentario, texto_comentario, id_usuario, id_tarea, fecha_hora FROM comentarios WHERE texto_comentario = 'Comentario de prueba 223315'  ->  []
+   BD despues: SELECT id_comentario, texto_comentario, id_usuario, id_tarea, fecha_hora FROM comentarios WHERE texto_comentario = 'Comentario de prueba 223315'  ->  [{"id_comentario": 1014, "texto_comentario": "Comentario de prueba 223315", "id_usuario": "Ana Demo", "id_tarea": 1008, "fecha_hora": "2026-11-22 10:30:00"}]
+   Esperado : HTTP 200, respuesta 1; el comentario existe ligado a la tarea
+   Obtenido : HTTP 200, respuesta '1'; filas despues=1
+   Estado   : PASA
+
+[COM-02] Alta de comentario sin texto (columna NOT NULL)
+   Peticion : POST http://localhost:8081/addComentario
+   Enviado  : {"json": {"id_usuario": "Ana Demo", "id_tarea": 1008, "fecha_hora": "2026-11-22 10:31:00"}}
+   HTTP     : 500  (27 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:17.878+00:00","status":500,"error":"Internal Server Error","path":"/addComentario"}
+   BD antes : SELECT COUNT(*) AS total FROM comentarios  ->  [{"total": 4}]
+   BD despues: SELECT COUNT(*) AS total FROM comentarios  ->  [{"total": 4}]
+   Esperado : Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no cambia el numero de comentarios
+   Obtenido : HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.878+00:00","status":500,"error":"Internal Server Error","path":"/addComentario"}'; comentarios antes=4, despues=4
+   Estado   : FALLA
+
+[COM-03] Listar comentarios de una tarea
+   Peticion : POST http://localhost:8081/getComentario
+   Enviado  : {"json": {"id_tarea": 1008}}
+   HTTP     : 200  (20 ms)   Respuesta: [{"id_comentario":1014,"id_usuario":"Ana Demo","id_tarea":1008,"texto_comentario":"Comentario de prueba 223315","fecha_hora":"2026-11-22 10:30:00"}]
+   BD despues: SELECT id_comentario FROM comentarios WHERE id_tarea = 1008  ->  [{"id_comentario": 1014}]
+   Esperado : HTTP 200; arreglo con los comentarios de la tarea, igual a la BD
+   Obtenido : HTTP 200, 1 comentario(s) en la respuesta, 1 en la BD
+   Estado   : PASA
+
+[COM-04] Listar comentarios de una tarea inexistente
+   Peticion : POST http://localhost:8081/getComentario
+   Enviado  : {"json": {"id_tarea": 999999}}
+   HTTP     : 200  (26 ms)   Respuesta: []
+   Esperado : HTTP 200; arreglo vacio []
+   Obtenido : HTTP 200, respuesta '[]'
+   Estado   : PASA
+
+[COM-05] Buscar comentario por id existente
+   Peticion : GET http://localhost:8081/buscarComentario?id=1014
+   Enviado  : {"query": {"id": 1014}}
+   HTTP     : 200  (21 ms)   Respuesta: {"id_comentario":1014,"id_usuario":"Ana Demo","id_tarea":1008,"texto_comentario":"Comentario de prueba 223315","fecha_hora":"2026-11-22 10:30:00"}
+   Esperado : HTTP 200; JSON con el comentario creado
+   Obtenido : HTTP 200, id_comentario=1014, texto='Comentario de prueba 223315'
+   Estado   : PASA
+
+[COM-06] Buscar comentario SIN el parametro id
+   Peticion : GET http://localhost:8081/buscarComentario
+   HTTP     : 400  (26 ms)   Respuesta: {"timestamp":"2026-11-23T04:33:17.975+00:00","status":400,"error":"Bad Request","path":"/buscarComentario"}
+   Esperado : Error controlado: HTTP 400 con mensaje que indique el parametro faltante 'id'
+   Obtenido : HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.975+00:00","status":400,"error":"Bad Request","path":"/buscarComentario"}'
+   Estado   : FALLA
+
+[COM-07] Actualizar texto de un comentario existente
+   Peticion : POST http://localhost:8081/updateComentario
+   Enviado  : {"json": {"id_comentario": 1014, "id_usuario": "Ana Demo", "id_tarea": 1008, "texto_comentario": "Comentario de prueba 223315 (editado)", "fecha_hora": "2026-11-22 10:30:00"}}
+   HTTP     : 200  (50 ms)   Respuesta: 1
+   BD antes : SELECT id_comentario, texto_comentario FROM comentarios WHERE id_comentario = 1014  ->  [{"id_comentario": 1014, "texto_comentario": "Comentario de prueba 223315"}]
+   BD despues: SELECT id_comentario, texto_comentario FROM comentarios WHERE id_comentario = 1014  ->  [{"id_comentario": 1014, "texto_comentario": "Comentario de prueba 223315 (editado)"}]
+   Esperado : HTTP 200, respuesta 1; texto_comentario actualizado
+   Obtenido : HTTP 200, respuesta '1'; texto -> 'Comentario de prueba 223315 (editado)'
+   Estado   : PASA
+
+[COM-08] Actualizar comentario con id inexistente
+   Peticion : POST http://localhost:8081/updateComentario
+   Enviado  : {"json": {"id_comentario": 999999, "id_usuario": "Ana Demo", "id_tarea": 1008, "texto_comentario": "Comentario fantasma", "fecha_hora": "2026-11-22 10:30:00"}}
+   HTTP     : 200  (20 ms)   Respuesta: 1
+   BD antes : SELECT COUNT(*) AS total FROM comentarios  ->  [{"total": 4}]
+   BD despues: SELECT COUNT(*) AS total FROM comentarios  ->  [{"total": 5}]
+   Esperado : HTTP 200, respuesta 0; NO se inserta un comentario nuevo
+   Obtenido : HTTP 200, respuesta '1'; comentarios antes=4, despues=5
+   Estado   : FALLA
+
+[COM-09] Listar todos los comentarios
+   Peticion : POST http://localhost:8081/buscarComentarios
+   HTTP     : 200  (22 ms)   Respuesta: [{"id_comentario":1,"id_usuario":"Ana Demo","id_tarea":1,"texto_comentario":"Tablas listas para revision","fecha_hora":"2026-09-12 13:48:00"},{"id_comentario":2,"id_usuario":"Docente Demo","id_tarea":1,"texto_comentario":"Aprobado","fecha_hora":"2026-09-13 09:10:00"},{"id_comentario":3,"id_usuario": ...
+   BD despues: SELECT COUNT(*) AS total FROM comentarios  ->  [{"total": 5}]
+   Esperado : HTTP 200; arreglo con el mismo numero de registros que la tabla comentarios
+   Obtenido : HTTP 200, 5 comentarios en la respuesta, 5 en la BD
+   Estado   : PASA
+
+[COM-10] Eliminar comentario existente
+   Peticion : DELETE http://localhost:8081/deleteComentario
+   Enviado  : {"json": {"id_comentario": 1014}}
+   HTTP     : 200  (14 ms)   Respuesta: 1
+   BD antes : SELECT COUNT(*) AS registros FROM comentarios WHERE id_comentario = 1014  ->  [{"registros": 1}]
+   BD despues: SELECT COUNT(*) AS registros FROM comentarios WHERE id_comentario = 1014  ->  [{"registros": 0}]
+   Esperado : HTTP 200, respuesta 1; el registro ya no existe
+   Obtenido : HTTP 200, respuesta '1'; registros antes=1, despues=0
+   Estado   : PASA
+
+[COM-11] Eliminar comentario con id inexistente
+   Peticion : DELETE http://localhost:8081/deleteComentario
+   Enviado  : {"json": {"id_comentario": 999999}}
+   HTTP     : 200  (6 ms)   Respuesta: 0
+   Esperado : HTTP 200, respuesta 0
+   Obtenido : HTTP 200, respuesta '0'
+   Estado   : PASA
+
+====================================================================================================
+  7. BAJAS DE TAREAS Y PROYECTOS, INTEGRIDAD REFERENCIAL
+====================================================================================================
+[TAR-11] Eliminar tarea existente
+   Peticion : DELETE http://localhost:8081/deleteTareas
+   Enviado  : {"json": {"id_tarea": 1008}}
+   HTTP     : 200  (43 ms)   Respuesta: 1
+   BD antes : SELECT COUNT(*) AS registros FROM tareas WHERE id_tarea = 1008  ->  [{"registros": 1}]
+   BD despues: SELECT COUNT(*) AS registros FROM tareas WHERE id_tarea = 1008  ->  [{"registros": 0}]
+   Esperado : HTTP 200, respuesta 1; el registro ya no existe
+   Obtenido : HTTP 200, respuesta '1'; registros antes=1, despues=0
+   Estado   : PASA
+
+[TAR-12] Eliminar tarea con id inexistente
+   Peticion : DELETE http://localhost:8081/deleteTareas
+   Enviado  : {"json": {"id_tarea": 999999}}
+   HTTP     : 200  (6 ms)   Respuesta: 0
+   Esperado : HTTP 200, respuesta 0
+   Obtenido : HTTP 200, respuesta '0'
+   Estado   : PASA
+
+   (preparacion INT-01: proyecto 1017, tarea 1018, 1 comentario y 1 asignacion creados por la API)
+[INT-01] Eliminar proyecto con tarea, comentario y asignacion (ON DELETE CASCADE)
+   Peticion : DELETE http://localhost:8081/deleteProyecto
+   Enviado  : {"json": {"id_proyecto": 1017}}
+   HTTP     : 200  (17 ms)   Respuesta: 1
+   BD antes : SELECT (SELECT COUNT(*) FROM proyectos WHERE id_proyecto = 1017) AS proyecto, (SELECT COUNT(*) FROM tareas WHERE id_proyecto = 1017) AS tareas, (SELECT COUNT(*) FROM comentarios WHERE id_tarea = 1018) AS comentarios, (SELECT COUNT(*) FROM asignaciones WHERE id_tarea = 1018) AS asignaciones  ->  [{"proyecto": 1, "tareas": 1, "comentarios": 1, "asignaciones": 1}]
+   BD despues: SELECT (SELECT COUNT(*) FROM proyectos WHERE id_proyecto = 1017) AS proyecto, (SELECT COUNT(*) FROM tareas WHERE id_proyecto = 1017) AS tareas, (SELECT COUNT(*) FROM comentarios WHERE id_tarea = 1018) AS comentarios, (SELECT COUNT(*) FROM asignaciones WHERE id_tarea = 1018) AS asignaciones  ->  [{"proyecto": 0, "tareas": 0, "comentarios": 0, "asignaciones": 0}]
+   Esperado : HTTP 200, respuesta 1; se eliminan en cascada el proyecto, sus tareas, comentarios y asignaciones
+   Obtenido : HTTP 200, respuesta '1'; antes={'proyecto': 1, 'tareas': 1, 'comentarios': 1, 'asignaciones': 1}, despues={'proyecto': 0, 'tareas': 0, 'comentarios': 0, 'asignaciones': 0}
+   Estado   : PASA
+
+[PRY-10] Eliminar proyecto existente
+   Peticion : DELETE http://localhost:8081/deleteProyecto
+   Enviado  : {"json": {"id_proyecto": 1004}}
+   HTTP     : 200  (23 ms)   Respuesta: 1
+   BD antes : SELECT COUNT(*) AS registros FROM proyectos WHERE id_proyecto = 1004  ->  [{"registros": 1}]
+   BD despues: SELECT COUNT(*) AS registros FROM proyectos WHERE id_proyecto = 1004  ->  [{"registros": 0}]
+   Esperado : HTTP 200, respuesta 1; el registro ya no existe
+   Obtenido : HTTP 200, respuesta '1'; registros antes=1, despues=0
+   Estado   : PASA
+
+[PRY-11] Eliminar proyecto con id inexistente
+   Peticion : DELETE http://localhost:8081/deleteProyecto
+   Enviado  : {"json": {"id_proyecto": 999999}}
+   HTTP     : 200  (26 ms)   Respuesta: 0
+   Esperado : HTTP 200, respuesta 0
+   Obtenido : HTTP 200, respuesta '0'
+   Estado   : PASA
+
+====================================================================================================
+  RESUMEN
+====================================================================================================
+Casos ejecutados : 64
+Endpoints probados: 28 de 28
+PASA             : 46
+FALLA            : 18
+Porcentaje de exito: 71.9 %
+   - USR-03: Alta de usuario con correo duplicado (restriccion UNIQUE)  ->  HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.214+00:00","status":500,"error":"Internal Server Error","path":"/addUsuario"}'; registros con ese correo=1
+   - USR-04: Alta de usuario sin nombre (columna NOT NULL)  ->  HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.369+00:00","status":500,"error":"Internal Server Error","path":"/addUsuario"}'; registros=0
+   - USR-05: Alta de usuario con JSON mal formado  ->  HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.377+00:00","status":400,"error":"Bad Request","path":"/addUsuario"}'
+   - USR-08: Buscar usuario SIN el parametro id  ->  HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.478+00:00","status":400,"error":"Bad Request","path":"/buscarUsuario"}'
+   - USR-09: Buscar usuario con id no numerico  ->  HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:16.485+00:00","status":400,"error":"Bad Request","path":"/buscarUsuario"}'
+   - USR-15: Actualizar usuario con id inexistente  ->  HTTP 500, respuesta '{"timestamp":"2026-11-23T04:33:16.999+00:00","status":500,"error":"Internal Server Error","path":"/updateUsuario"}'; usuarios antes=4, despues=4
+   - PRY-02: Alta de proyecto sin nombre (columna NOT NULL)  ->  HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.136+00:00","status":500,"error":"Internal Server Error","path":"/addProyecto"}'; proyectos antes=3, despues=3
+   - PRY-03: Alta de proyecto con fecha invalida (2026-13-45)  ->  HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.159+00:00","status":500,"error":"Internal Server Error","path":"/addProyecto"}'; registros=0
+   - PRY-06: Buscar proyecto SIN el parametro id_proyecto  ->  HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.188+00:00","status":400,"error":"Bad Request","path":"/buscarProyecto"}'
+   - PRY-08: Actualizar proyecto con id inexistente  ->  HTTP 200, respuesta '1'; proyectos antes=3, despues=4, insertados con ese nombre=1
+   - TAR-02: Alta de tarea con id_proyecto inexistente (llave foranea)  ->  HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.337+00:00","status":500,"error":"Internal Server Error","path":"/addTareas"}'; registros=0
+   - TAR-07: Buscar tarea con id no numerico  ->  HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.445+00:00","status":400,"error":"Bad Request","path":"/buscarTarea"}'
+   - TAR-09: Actualizar tarea con id inexistente  ->  HTTP 200, respuesta '1'; tareas antes=5, despues=6
+   - ASG-02: Asignar a un usuario inexistente (llave foranea)  ->  HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.650+00:00","status":500,"error":"Internal Server Error","path":"/addAsignacion"}'; asignaciones antes=3, despues=3
+   - ASG-06: Actualizar asignacion con id inexistente  ->  HTTP 200, respuesta '1'; asignaciones antes=3, despues=4
+   - COM-02: Alta de comentario sin texto (columna NOT NULL)  ->  HTTP 500, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.878+00:00","status":500,"error":"Internal Server Error","path":"/addComentario"}'; comentarios antes=4, despues=4
+   - COM-06: Buscar comentario SIN el parametro id  ->  HTTP 400, mensaje=None, cuerpo='{"timestamp":"2026-11-23T04:33:17.975+00:00","status":400,"error":"Bad Request","path":"/buscarComentario"}'
+   - COM-08: Actualizar comentario con id inexistente  ->  HTTP 200, respuesta '1'; comentarios antes=4, despues=5

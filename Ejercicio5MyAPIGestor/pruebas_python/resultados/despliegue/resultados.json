@@ -1,0 +1,2009 @@
+{
+  "config": {
+    "api": "http://localhost:8091",
+    "bd": "user@127.0.0.1:3308/db_cbtis",
+    "etiqueta": "despliegue",
+    "inicio": "2026-11-23T12:22:50",
+    "python": "3.14.7",
+    "fin": "2026-11-23T12:25:06"
+  },
+  "resumen": {
+    "total": 64,
+    "pasan": 64,
+    "fallan": 0,
+    "endpoints": [
+      "/addAsignacion",
+      "/addComentario",
+      "/addProyecto",
+      "/addTareas",
+      "/addUsuario",
+      "/buscarAsignacion",
+      "/buscarAsignaciones",
+      "/buscarComentario",
+      "/buscarComentarios",
+      "/buscarProyecto",
+      "/buscarProyectos",
+      "/buscarTarea",
+      "/buscarTareas",
+      "/buscarUsuario",
+      "/buscarUsuarios",
+      "/deleteAsignacion",
+      "/deleteComentario",
+      "/deleteProyecto",
+      "/deleteTareas",
+      "/deleteUsuario",
+      "/getComentario",
+      "/getTarea",
+      "/getUsuarioLogin",
+      "/updateAsignacion",
+      "/updateComentario",
+      "/updateProyecto",
+      "/updateTareas",
+      "/updateUsuario"
+    ]
+  },
+  "casos": [
+    {
+      "id": "BD-01",
+      "modulo": "Base de datos",
+      "tipo": "Base de datos",
+      "descripcion": "Conexion a MariaDB y tablas del esquema",
+      "metodo": "SQL",
+      "ruta": null,
+      "url": null,
+      "entrada": {},
+      "esperado": "Conexion exitosa y 6 tablas (usuario, proyectos, tareas, asignaciones, comentarios, hibernate_sequence)",
+      "http_esperado": null,
+      "http": null,
+      "ms": 0,
+      "respuesta": "",
+      "sql_antes": "SELECT VERSION() AS version, DATABASE() AS base_datos, CURRENT_USER() AS usuario",
+      "bd_antes": [
+        {
+          "version": "10.11.19-MariaDB-ubu2204",
+          "base_datos": "db_cbtis",
+          "usuario": "user@%"
+        }
+      ],
+      "sql_despues": "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME",
+      "bd_despues": [
+        {
+          "TABLE_NAME": "asignaciones"
+        },
+        {
+          "TABLE_NAME": "comentarios"
+        },
+        {
+          "TABLE_NAME": "hibernate_sequence"
+        },
+        {
+          "TABLE_NAME": "proyectos"
+        },
+        {
+          "TABLE_NAME": "tareas"
+        },
+        {
+          "TABLE_NAME": "usuario"
+        }
+      ],
+      "obtenido": "6 tablas: asignaciones, comentarios, hibernate_sequence, proyectos, tareas, usuario",
+      "estado": "PASA"
+    },
+    {
+      "id": "BD-02",
+      "modulo": "Base de datos",
+      "tipo": "Base de datos",
+      "descripcion": "Registros existentes por tabla (datos semilla)",
+      "metodo": "SQL",
+      "ruta": null,
+      "url": null,
+      "entrada": {},
+      "esperado": "Todas las tablas de negocio con al menos 1 registro",
+      "http_esperado": null,
+      "http": null,
+      "ms": 0,
+      "respuesta": "",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT (SELECT COUNT(*) FROM usuario) AS usuario, (SELECT COUNT(*) FROM proyectos) AS proyectos, (SELECT COUNT(*) FROM tareas) AS tareas, (SELECT COUNT(*) FROM asignaciones) AS asignaciones, (SELECT COUNT(*) FROM comentarios) AS comentarios",
+      "bd_despues": [
+        {
+          "usuario": 3,
+          "proyectos": 2,
+          "tareas": 4,
+          "asignaciones": 2,
+          "comentarios": 3
+        }
+      ],
+      "obtenido": "Conteos: {'usuario': 3, 'proyectos': 2, 'tareas': 4, 'asignaciones': 2, 'comentarios': 3}",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-01",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de usuario con datos validos (INSERT)",
+      "metodo": "POST",
+      "ruta": "/addUsuario",
+      "url": "http://localhost:8091/addUsuario",
+      "entrada": {
+        "json": {
+          "nombre": "Usuario Prueba 122249",
+          "correo_electronico": "prueba.122249@ejemplo.com",
+          "contrasena": "Prueba#2026",
+          "rol": "Estudiante",
+          "imagen_usuario": "#3366FF"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; el registro existe en la tabla usuario con la contrasena cifrada (BCrypt)",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2270,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_usuario, nombre, correo_electronico, LEFT(contrasena, 7) AS hash_inicio, rol FROM usuario WHERE correo_electronico = 'prueba.122249@ejemplo.com'",
+      "bd_antes": [],
+      "sql_despues": "SELECT id_usuario, nombre, correo_electronico, LEFT(contrasena, 7) AS hash_inicio, rol FROM usuario WHERE correo_electronico = 'prueba.122249@ejemplo.com'",
+      "bd_despues": [
+        {
+          "id_usuario": 1000,
+          "nombre": "Usuario Prueba 122249",
+          "correo_electronico": "prueba.122249@ejemplo.com",
+          "hash_inicio": "$2a$10$",
+          "rol": "Estudiante"
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; filas antes=0, despues=1, hash=$2a$10$...",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-02",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de usuario sin contrasena (dato obligatorio faltante)",
+      "metodo": "POST",
+      "ruta": "/addUsuario",
+      "url": "http://localhost:8091/addUsuario",
+      "entrada": {
+        "json": {
+          "nombre": "Sin Clave",
+          "correo_electronico": "sin.clave.122249@ejemplo.com",
+          "rol": "Estudiante"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0; no se inserta ningun registro",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2032,
+      "respuesta": "0",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS registros FROM usuario WHERE correo_electronico = 'sin.clave.122249@ejemplo.com'",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '0'; registros despues=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-03",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de usuario con correo duplicado (restriccion UNIQUE)",
+      "metodo": "POST",
+      "ruta": "/addUsuario",
+      "url": "http://localhost:8091/addUsuario",
+      "entrada": {
+        "json": {
+          "nombre": "Ana Duplicada",
+          "correo_electronico": "ana.demo@ejemplo.com",
+          "contrasena": "Otra#123",
+          "rol": "Estudiante"
+        }
+      },
+      "esperado": "Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; el correo sigue registrado una sola vez",
+      "http_esperado": 409,
+      "http": 409,
+      "ms": 2129,
+      "respuesta": "{\"resultado\":0,\"estado\":409,\"error\":\"Datos invalidos\",\"mensaje\":\"Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.\"}",
+      "sql_antes": "SELECT COUNT(*) AS registros FROM usuario WHERE correo_electronico = 'ana.demo@ejemplo.com'",
+      "bd_antes": [
+        {
+          "registros": 1
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS registros FROM usuario WHERE correo_electronico = 'ana.demo@ejemplo.com'",
+      "bd_despues": [
+        {
+          "registros": 1
+        }
+      ],
+      "obtenido": "HTTP 409, mensaje='Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.'; registros con ese correo=1",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-04",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de usuario sin nombre (columna NOT NULL)",
+      "metodo": "POST",
+      "ruta": "/addUsuario",
+      "url": "http://localhost:8091/addUsuario",
+      "entrada": {
+        "json": {
+          "correo_electronico": "sin.nombre.122249@ejemplo.com",
+          "contrasena": "Clave#123",
+          "rol": "Estudiante"
+        }
+      },
+      "esperado": "Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no se inserta el registro",
+      "http_esperado": 409,
+      "http": 409,
+      "ms": 2129,
+      "respuesta": "{\"resultado\":0,\"estado\":409,\"error\":\"Datos invalidos\",\"mensaje\":\"Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS registros FROM usuario WHERE correo_electronico = 'sin.nombre.122249@ejemplo.com'",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 409, mensaje='Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.'; registros=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-05",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de usuario con JSON mal formado",
+      "metodo": "POST",
+      "ruta": "/addUsuario",
+      "url": "http://localhost:8091/addUsuario",
+      "entrada": {
+        "crudo": "{\"nombre\": \"Incompleto\", "
+      },
+      "esperado": "Error controlado: HTTP 400 con JSON {resultado:0, mensaje}",
+      "http_esperado": 400,
+      "http": 400,
+      "ms": 2059,
+      "respuesta": "{\"resultado\":0,\"estado\":400,\"error\":\"Solicitud invalida\",\"mensaje\":\"El cuerpo de la peticion falta o no es un JSON valido.\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 400, mensaje='El cuerpo de la peticion falta o no es un JSON valido.'",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-06",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar usuario por id existente (SELECT)",
+      "metodo": "GET",
+      "ruta": "/buscarUsuario",
+      "url": "http://localhost:8091/buscarUsuario?id=1000",
+      "entrada": {
+        "query": {
+          "id": 1000
+        }
+      },
+      "esperado": "HTTP 200; JSON del usuario creado y SIN el campo contrasena",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2083,
+      "respuesta": "{\"nombre\":\"Usuario Prueba 122249\",\"rol\":\"Estudiante\",\"id_usuario\":1000,\"correo_electronico\":\"prueba.122249@ejemplo.com\",\"imagen_usuario\":\"#3366FF\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT id_usuario, nombre, correo_electronico, LEFT(contrasena, 7) AS hash_inicio, rol FROM usuario WHERE correo_electronico = 'prueba.122249@ejemplo.com'",
+      "bd_despues": [
+        {
+          "id_usuario": 1000,
+          "nombre": "Usuario Prueba 122249",
+          "correo_electronico": "prueba.122249@ejemplo.com",
+          "hash_inicio": "$2a$10$",
+          "rol": "Estudiante"
+        }
+      ],
+      "obtenido": "HTTP 200, id_usuario=1000, nombre='Usuario Prueba 122249', contrasena presente=False",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-07",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar usuario con id inexistente",
+      "metodo": "GET",
+      "ruta": "/buscarUsuario",
+      "url": "http://localhost:8091/buscarUsuario?id=999999",
+      "entrada": {
+        "query": {
+          "id": 999999
+        }
+      },
+      "esperado": "HTTP 200; objeto vacio (id_usuario = null)",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2046,
+      "respuesta": "{\"nombre\":null,\"rol\":null,\"id_usuario\":null,\"correo_electronico\":null,\"imagen_usuario\":null}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS registros FROM usuario WHERE id_usuario = 999999",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 200, id_usuario=None; registros en BD=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-08",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar usuario SIN el parametro id",
+      "metodo": "GET",
+      "ruta": "/buscarUsuario",
+      "url": "http://localhost:8091/buscarUsuario",
+      "entrada": {},
+      "esperado": "Error controlado: HTTP 400 con mensaje que indique el parametro faltante 'id'",
+      "http_esperado": 400,
+      "http": 400,
+      "ms": 2042,
+      "respuesta": "{\"resultado\":0,\"estado\":400,\"error\":\"Solicitud invalida\",\"mensaje\":\"Falta el parametro obligatorio 'id'.\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 400, mensaje=\"Falta el parametro obligatorio 'id'.\"",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-09",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar usuario con id no numerico",
+      "metodo": "GET",
+      "ruta": "/buscarUsuario",
+      "url": "http://localhost:8091/buscarUsuario?id=abc",
+      "entrada": {
+        "query": {
+          "id": "abc"
+        }
+      },
+      "esperado": "Error controlado: HTTP 400 con mensaje que indique que 'id' debe ser numerico",
+      "http_esperado": 400,
+      "http": 400,
+      "ms": 2075,
+      "respuesta": "{\"resultado\":0,\"estado\":400,\"error\":\"Solicitud invalida\",\"mensaje\":\"El parametro 'id' debe ser un numero entero.\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 400, mensaje=\"El parametro 'id' debe ser un numero entero.\"",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-10",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Login con credenciales validas",
+      "metodo": "POST",
+      "ruta": "/getUsuarioLogin",
+      "url": "http://localhost:8091/getUsuarioLogin",
+      "entrada": {
+        "json": {
+          "correo_electronico": "prueba.122249@ejemplo.com",
+          "contrasena": "Prueba#2026"
+        }
+      },
+      "esperado": "HTTP 200; JSON del usuario autenticado, sin contrasena",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2160,
+      "respuesta": "{\"nombre\":\"Usuario Prueba 122249\",\"rol\":\"Estudiante\",\"id_usuario\":1000,\"correo_electronico\":\"prueba.122249@ejemplo.com\",\"imagen_usuario\":\"#3366FF\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, nombre='Usuario Prueba 122249', contrasena presente=False",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-11",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Login con contrasena incorrecta",
+      "metodo": "POST",
+      "ruta": "/getUsuarioLogin",
+      "url": "http://localhost:8091/getUsuarioLogin",
+      "entrada": {
+        "json": {
+          "correo_electronico": "prueba.122249@ejemplo.com",
+          "contrasena": "Incorrecta#1"
+        }
+      },
+      "esperado": "HTTP 200; usuario centinela con nombre = '000' (acceso rechazado)",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2121,
+      "respuesta": "{\"nombre\":\"000\",\"rol\":null,\"id_usuario\":null,\"correo_electronico\":null,\"imagen_usuario\":null}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, nombre='000'",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-12",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Login con correo no registrado",
+      "metodo": "POST",
+      "ruta": "/getUsuarioLogin",
+      "url": "http://localhost:8091/getUsuarioLogin",
+      "entrada": {
+        "json": {
+          "correo_electronico": "no.existe.122249@ejemplo.com",
+          "contrasena": "Prueba#2026"
+        }
+      },
+      "esperado": "HTTP 200; nombre = '000'",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2042,
+      "respuesta": "{\"nombre\":\"000\",\"rol\":null,\"id_usuario\":null,\"correo_electronico\":null,\"imagen_usuario\":null}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, nombre='000'",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-13",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Login con campos vacios",
+      "metodo": "POST",
+      "ruta": "/getUsuarioLogin",
+      "url": "http://localhost:8091/getUsuarioLogin",
+      "entrada": {
+        "json": {
+          "correo_electronico": "",
+          "contrasena": ""
+        }
+      },
+      "esperado": "HTTP 200; nombre = '000' sin consultar credenciales",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2056,
+      "respuesta": "{\"nombre\":\"000\",\"rol\":null,\"id_usuario\":null,\"correo_electronico\":null,\"imagen_usuario\":null}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, nombre='000'",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-14",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar usuario existente sin enviar contrasena (UPDATE)",
+      "metodo": "POST",
+      "ruta": "/updateUsuario",
+      "url": "http://localhost:8091/updateUsuario",
+      "entrada": {
+        "json": {
+          "id_usuario": 1000,
+          "nombre": "Usuario Prueba 122249 (editado)",
+          "correo_electronico": "prueba.122249@ejemplo.com",
+          "rol": "Docente",
+          "imagen_usuario": "#3366FF"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; cambian nombre y rol y se conserva el mismo hash de contrasena",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2084,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_usuario, nombre, rol, LEFT(contrasena, 20) AS hash_inicio FROM usuario WHERE id_usuario = 1000",
+      "bd_antes": [
+        {
+          "id_usuario": 1000,
+          "nombre": "Usuario Prueba 122249",
+          "rol": "Estudiante",
+          "hash_inicio": "$2a$10$llYGaihvl4kdX"
+        }
+      ],
+      "sql_despues": "SELECT id_usuario, nombre, rol, LEFT(contrasena, 20) AS hash_inicio FROM usuario WHERE id_usuario = 1000",
+      "bd_despues": [
+        {
+          "id_usuario": 1000,
+          "nombre": "Usuario Prueba 122249 (editado)",
+          "rol": "Docente",
+          "hash_inicio": "$2a$10$llYGaihvl4kdX"
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; nombre='Usuario Prueba 122249 (editado)', rol='Docente', hash conservado=True",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-15",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar usuario con id inexistente",
+      "metodo": "POST",
+      "ruta": "/updateUsuario",
+      "url": "http://localhost:8091/updateUsuario",
+      "entrada": {
+        "json": {
+          "id_usuario": 999999,
+          "nombre": "Fantasma",
+          "correo_electronico": "fantasma.122249@ejemplo.com",
+          "rol": "Estudiante"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0; NO se inserta un usuario nuevo",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2087,
+      "respuesta": "0",
+      "sql_antes": "SELECT (SELECT COUNT(*) FROM usuario) AS total_usuarios, (SELECT COUNT(*) FROM usuario WHERE correo_electronico = 'fantasma.122249@ejemplo.com') AS con_ese_correo",
+      "bd_antes": [
+        {
+          "total_usuarios": 4,
+          "con_ese_correo": 0
+        }
+      ],
+      "sql_despues": "SELECT (SELECT COUNT(*) FROM usuario) AS total_usuarios, (SELECT COUNT(*) FROM usuario WHERE correo_electronico = 'fantasma.122249@ejemplo.com') AS con_ese_correo",
+      "bd_despues": [
+        {
+          "total_usuarios": 4,
+          "con_ese_correo": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '0'; usuarios antes=4, despues=4",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-16",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Listar todos los usuarios",
+      "metodo": "POST",
+      "ruta": "/buscarUsuarios",
+      "url": "http://localhost:8091/buscarUsuarios",
+      "entrada": {},
+      "esperado": "HTTP 200; arreglo con el mismo numero de registros que la tabla y ninguno expone la contrasena",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2057,
+      "respuesta": "[{\"nombre\":\"Ana Demo\",\"rol\":\"Estudiante\",\"id_usuario\":1,\"correo_electronico\":\"ana.demo@ejemplo.com\",\"imagen_usuario\":\"#70FAB7\"},{\"nombre\":\"Luis Demo\",\"rol\":\"Estudiante\",\"id_usuario\":2,\"correo_electronico\":\"luis.demo@ejemplo.com\",\"imagen_usuario\":\"#54EA01\"},{\"nombre\":\"Docente Demo\",\"rol\":\"Docente\",\"id_usuario\":3,\"correo_electronico\":\"docente.demo@ejemplo.com\",\"imagen_usuario\":\"#805611\"},{\"nombre\":\"Usuario Prueba 122249 (editado)\",\"rol\":\"Docente\",\"id_usuario\":1000,\"correo_electronico\":\"prueba.122249@ejemplo.com\",\"imagen_usuario\":\"#3366FF\"}]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS total FROM usuario",
+      "bd_despues": [
+        {
+          "total": 4
+        }
+      ],
+      "obtenido": "HTTP 200, 4 usuarios en la respuesta, 4 en la BD; alguno con contrasena=False",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-17",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar usuario existente (DELETE)",
+      "metodo": "DELETE",
+      "ruta": "/deleteUsuario",
+      "url": "http://localhost:8091/deleteUsuario",
+      "entrada": {
+        "json": {
+          "id_usuario": 1000
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; el registro ya no existe en la tabla",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2068,
+      "respuesta": "1",
+      "sql_antes": "SELECT COUNT(*) AS registros FROM usuario WHERE id_usuario = 1000",
+      "bd_antes": [
+        {
+          "registros": 1
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS registros FROM usuario WHERE id_usuario = 1000",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; registros antes=1, despues=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "USR-18",
+      "modulo": "Usuario",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar usuario con id inexistente",
+      "metodo": "DELETE",
+      "ruta": "/deleteUsuario",
+      "url": "http://localhost:8091/deleteUsuario",
+      "entrada": {
+        "json": {
+          "id_usuario": 999999
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0; no se elimina nada",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2070,
+      "respuesta": "0",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, respuesta '0'",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-01",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de proyecto con JSON valido (INSERT)",
+      "metodo": "POST",
+      "ruta": "/addProyecto",
+      "url": "http://localhost:8091/addProyecto",
+      "entrada": {
+        "json": {
+          "nombre": "Proyecto Prueba 122249",
+          "descripcion": "Proyecto creado por la suite de pruebas",
+          "fecha_inicio": "2026-11-01",
+          "fecha_finalizacion": "2026-12-15",
+          "estado_proyecto": "En proceso",
+          "fondo": "/Images/azulReal.png"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; el proyecto existe en la tabla proyectos",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2073,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_proyecto, nombre, estado_proyecto, fecha_inicio, fecha_finalizacion FROM proyectos WHERE nombre = 'Proyecto Prueba 122249'",
+      "bd_antes": [],
+      "sql_despues": "SELECT id_proyecto, nombre, estado_proyecto, fecha_inicio, fecha_finalizacion FROM proyectos WHERE nombre = 'Proyecto Prueba 122249'",
+      "bd_despues": [
+        {
+          "id_proyecto": 1003,
+          "nombre": "Proyecto Prueba 122249",
+          "estado_proyecto": "En proceso",
+          "fecha_inicio": "2026-11-01",
+          "fecha_finalizacion": "2026-12-15"
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; filas antes=0, despues=1, id_proyecto=1003",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-02",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de proyecto sin nombre (columna NOT NULL)",
+      "metodo": "POST",
+      "ruta": "/addProyecto",
+      "url": "http://localhost:8091/addProyecto",
+      "entrada": {
+        "json": {
+          "descripcion": "Sin nombre",
+          "estado_proyecto": "En proceso"
+        }
+      },
+      "esperado": "Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no cambia el numero de proyectos",
+      "http_esperado": 409,
+      "http": 409,
+      "ms": 2075,
+      "respuesta": "{\"resultado\":0,\"estado\":409,\"error\":\"Datos invalidos\",\"mensaje\":\"Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.\"}",
+      "sql_antes": "SELECT COUNT(*) AS total FROM proyectos",
+      "bd_antes": [
+        {
+          "total": 3
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS total FROM proyectos",
+      "bd_despues": [
+        {
+          "total": 3
+        }
+      ],
+      "obtenido": "HTTP 409, mensaje='Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.'; proyectos antes=3, despues=3",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-03",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de proyecto con fecha invalida (2026-13-45)",
+      "metodo": "POST",
+      "ruta": "/addProyecto",
+      "url": "http://localhost:8091/addProyecto",
+      "entrada": {
+        "json": {
+          "nombre": "Fecha Invalida 122249",
+          "fecha_inicio": "2026-13-45",
+          "estado_proyecto": "En proceso"
+        }
+      },
+      "esperado": "Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no se inserta el registro",
+      "http_esperado": 409,
+      "http": 409,
+      "ms": 2059,
+      "respuesta": "{\"resultado\":0,\"estado\":409,\"error\":\"Datos invalidos\",\"mensaje\":\"Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS registros FROM proyectos WHERE nombre = 'Fecha Invalida 122249'",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 409, mensaje='Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.'; registros=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-04",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar proyecto por id existente",
+      "metodo": "GET",
+      "ruta": "/buscarProyecto",
+      "url": "http://localhost:8091/buscarProyecto?id_proyecto=1003",
+      "entrada": {
+        "query": {
+          "id_proyecto": 1003
+        }
+      },
+      "esperado": "HTTP 200; JSON con el proyecto creado",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2056,
+      "respuesta": "{\"nombre\":\"Proyecto Prueba 122249\",\"descripcion\":\"Proyecto creado por la suite de pruebas\",\"fondo\":\"/Images/azulReal.png\",\"id_proyecto\":1003,\"fecha_inicio\":\"2026-11-01\",\"fecha_finalizacion\":\"2026-12-15\",\"estado_proyecto\":\"En proceso\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT id_proyecto, nombre, estado_proyecto, fecha_inicio, fecha_finalizacion FROM proyectos WHERE nombre = 'Proyecto Prueba 122249'",
+      "bd_despues": [
+        {
+          "id_proyecto": 1003,
+          "nombre": "Proyecto Prueba 122249",
+          "estado_proyecto": "En proceso",
+          "fecha_inicio": "2026-11-01",
+          "fecha_finalizacion": "2026-12-15"
+        }
+      ],
+      "obtenido": "HTTP 200, id_proyecto=1003, nombre='Proyecto Prueba 122249'",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-05",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar proyecto con id inexistente",
+      "metodo": "GET",
+      "ruta": "/buscarProyecto",
+      "url": "http://localhost:8091/buscarProyecto?id_proyecto=999999",
+      "entrada": {
+        "query": {
+          "id_proyecto": 999999
+        }
+      },
+      "esperado": "HTTP 200; objeto vacio (id_proyecto = null)",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2042,
+      "respuesta": "{\"nombre\":null,\"descripcion\":null,\"fondo\":null,\"id_proyecto\":null,\"fecha_inicio\":null,\"fecha_finalizacion\":null,\"estado_proyecto\":null}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, id_proyecto=None",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-06",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar proyecto SIN el parametro id_proyecto",
+      "metodo": "GET",
+      "ruta": "/buscarProyecto",
+      "url": "http://localhost:8091/buscarProyecto",
+      "entrada": {},
+      "esperado": "Error controlado: HTTP 400 con mensaje que indique el parametro faltante 'id_proyecto'",
+      "http_esperado": 400,
+      "http": 400,
+      "ms": 2055,
+      "respuesta": "{\"resultado\":0,\"estado\":400,\"error\":\"Solicitud invalida\",\"mensaje\":\"Falta el parametro obligatorio 'id_proyecto'.\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 400, mensaje=\"Falta el parametro obligatorio 'id_proyecto'.\"",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-07",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar proyecto existente (UPDATE)",
+      "metodo": "POST",
+      "ruta": "/updateProyecto",
+      "url": "http://localhost:8091/updateProyecto",
+      "entrada": {
+        "json": {
+          "id_proyecto": 1003,
+          "nombre": "Proyecto Prueba 122249",
+          "descripcion": "Proyecto creado por la suite de pruebas",
+          "fecha_inicio": "2026-11-01",
+          "fecha_finalizacion": "2026-12-15",
+          "estado_proyecto": "Terminado",
+          "fondo": "/Images/azulReal.png"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; estado_proyecto cambia a 'Terminado'",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2085,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_proyecto, nombre, estado_proyecto FROM proyectos WHERE id_proyecto = 1003",
+      "bd_antes": [
+        {
+          "id_proyecto": 1003,
+          "nombre": "Proyecto Prueba 122249",
+          "estado_proyecto": "En proceso"
+        }
+      ],
+      "sql_despues": "SELECT id_proyecto, nombre, estado_proyecto FROM proyectos WHERE id_proyecto = 1003",
+      "bd_despues": [
+        {
+          "id_proyecto": 1003,
+          "nombre": "Proyecto Prueba 122249",
+          "estado_proyecto": "Terminado"
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; estado antes='En proceso', despues='Terminado'",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-08",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar proyecto con id inexistente",
+      "metodo": "POST",
+      "ruta": "/updateProyecto",
+      "url": "http://localhost:8091/updateProyecto",
+      "entrada": {
+        "json": {
+          "id_proyecto": 999999,
+          "nombre": "Proyecto Fantasma 122249",
+          "estado_proyecto": "En proceso"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0; NO se inserta un proyecto nuevo",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2070,
+      "respuesta": "0",
+      "sql_antes": "SELECT (SELECT COUNT(*) FROM proyectos) AS total, (SELECT COUNT(*) FROM proyectos WHERE nombre = 'Proyecto Fantasma 122249') AS con_ese_nombre",
+      "bd_antes": [
+        {
+          "total": 3,
+          "con_ese_nombre": 0
+        }
+      ],
+      "sql_despues": "SELECT (SELECT COUNT(*) FROM proyectos) AS total, (SELECT COUNT(*) FROM proyectos WHERE nombre = 'Proyecto Fantasma 122249') AS con_ese_nombre",
+      "bd_despues": [
+        {
+          "total": 3,
+          "con_ese_nombre": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '0'; proyectos antes=3, despues=3, insertados con ese nombre=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-09",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Listar todos los proyectos",
+      "metodo": "POST",
+      "ruta": "/buscarProyectos",
+      "url": "http://localhost:8091/buscarProyectos",
+      "entrada": {},
+      "esperado": "HTTP 200; arreglo con el mismo numero de registros que la tabla proyectos",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2059,
+      "respuesta": "[{\"nombre\":\"My API Rest\",\"descripcion\":\"API REST para un sistema de informacion con al menos 5 tablas\",\"fondo\":\"/Images/animacion1.gif\",\"id_proyecto\":1,\"fecha_inicio\":\"2026-08-31\",\"fecha_finalizacion\":\"2026-11-29\",\"estado_proyecto\":\"En proceso\"},{\"nombre\":\"Portal Web\",\"descripcion\":\"Interfaz web del gestor de proyectos\",\"fondo\":\"/Images/azulReal.png\",\"id_proyecto\":2,\"fecha_inicio\":\"2026-09-15\",\"fecha_finalizacion\":\"2026-12-15\",\"estado_proyecto\":\"En proceso\"},{\"nombre\":\"Proyecto Prueba 122249\",\"descripcion\":\"Proyecto creado por la suite de pruebas\",\"fondo\":\"/Images/azulReal.png\",\"id_proyecto\":1003,\"fecha_inicio\":\"2026-11-01\",\"fecha_finalizacion\":\"2026-12-15\",\"estado_proyecto\":\"Terminado\"}]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS total FROM proyectos",
+      "bd_despues": [
+        {
+          "total": 3
+        }
+      ],
+      "obtenido": "HTTP 200, 3 proyectos en la respuesta, 3 en la BD",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-01",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de tarea ligada a un proyecto (relacion proyecto-tarea)",
+      "metodo": "POST",
+      "ruta": "/addTareas",
+      "url": "http://localhost:8091/addTareas",
+      "entrada": {
+        "json": {
+          "nombre": "Tarea Prueba 122249",
+          "descripcion": "Tarea de la suite",
+          "fecha_vencimiento": "2026-12-01",
+          "lista": "pendientes",
+          "estado": "warning",
+          "id_proyecto": 1003
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; la tarea existe con id_proyecto del proyecto creado",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2065,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_tarea, nombre, lista, estado, id_proyecto FROM tareas WHERE nombre = 'Tarea Prueba 122249'",
+      "bd_antes": [],
+      "sql_despues": "SELECT id_tarea, nombre, lista, estado, id_proyecto FROM tareas WHERE nombre = 'Tarea Prueba 122249'",
+      "bd_despues": [
+        {
+          "id_tarea": 1006,
+          "nombre": "Tarea Prueba 122249",
+          "lista": "pendientes",
+          "estado": "warning",
+          "id_proyecto": 1003
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; filas despues=1, id_tarea=1006, id_proyecto=1003",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-02",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de tarea con id_proyecto inexistente (llave foranea)",
+      "metodo": "POST",
+      "ruta": "/addTareas",
+      "url": "http://localhost:8091/addTareas",
+      "entrada": {
+        "json": {
+          "nombre": "Tarea Huerfana 122249",
+          "lista": "pendientes",
+          "estado": "danger",
+          "id_proyecto": 999999
+        }
+      },
+      "esperado": "Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no se crea una tarea huerfana",
+      "http_esperado": 409,
+      "http": 409,
+      "ms": 2076,
+      "respuesta": "{\"resultado\":0,\"estado\":409,\"error\":\"Datos invalidos\",\"mensaje\":\"Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS registros FROM tareas WHERE nombre = 'Tarea Huerfana 122249'",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 409, mensaje='Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.'; registros=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-03",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Listar tareas de un proyecto (consulta por id_proyecto)",
+      "metodo": "POST",
+      "ruta": "/getTarea",
+      "url": "http://localhost:8091/getTarea",
+      "entrada": {
+        "json": {
+          "id_proyecto": 1003
+        }
+      },
+      "esperado": "HTTP 200; arreglo con las tareas del proyecto, igual a lo que hay en la BD",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2035,
+      "respuesta": "[{\"nombre\":\"Tarea Prueba 122249\",\"descripcion\":\"Tarea de la suite\",\"lista\":\"pendientes\",\"estado\":\"warning\",\"id_tarea\":1006,\"fecha_vencimiento\":\"2026-12-01\",\"id_proyecto\":1003}]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT id_tarea, nombre FROM tareas WHERE id_proyecto = 1003",
+      "bd_despues": [
+        {
+          "id_tarea": 1006,
+          "nombre": "Tarea Prueba 122249"
+        }
+      ],
+      "obtenido": "HTTP 200, 1 tarea(s) en la respuesta, 1 en la BD",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-04",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Listar tareas de un proyecto inexistente",
+      "metodo": "POST",
+      "ruta": "/getTarea",
+      "url": "http://localhost:8091/getTarea",
+      "entrada": {
+        "json": {
+          "id_proyecto": 999999
+        }
+      },
+      "esperado": "HTTP 200; arreglo vacio []",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2054,
+      "respuesta": "[]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, respuesta '[]'",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-05",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Listar tareas sin enviar id_proyecto",
+      "metodo": "POST",
+      "ruta": "/getTarea",
+      "url": "http://localhost:8091/getTarea",
+      "entrada": {
+        "json": {}
+      },
+      "esperado": "HTTP 200; arreglo vacio [] (filtro nulo controlado)",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2058,
+      "respuesta": "[]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, respuesta '[]'",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-06",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar tarea por id existente",
+      "metodo": "GET",
+      "ruta": "/buscarTarea",
+      "url": "http://localhost:8091/buscarTarea?id_tarea=1006",
+      "entrada": {
+        "query": {
+          "id_tarea": 1006
+        }
+      },
+      "esperado": "HTTP 200; JSON con la tarea creada",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2065,
+      "respuesta": "{\"nombre\":\"Tarea Prueba 122249\",\"descripcion\":\"Tarea de la suite\",\"lista\":\"pendientes\",\"estado\":\"warning\",\"id_tarea\":1006,\"fecha_vencimiento\":\"2026-12-01\",\"id_proyecto\":1003}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, id_tarea=1006, nombre='Tarea Prueba 122249'",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-07",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar tarea con id no numerico",
+      "metodo": "GET",
+      "ruta": "/buscarTarea",
+      "url": "http://localhost:8091/buscarTarea?id_tarea=abc",
+      "entrada": {
+        "query": {
+          "id_tarea": "abc"
+        }
+      },
+      "esperado": "Error controlado: HTTP 400 con mensaje que indique que 'id_tarea' debe ser numerico",
+      "http_esperado": 400,
+      "http": 400,
+      "ms": 2081,
+      "respuesta": "{\"resultado\":0,\"estado\":400,\"error\":\"Solicitud invalida\",\"mensaje\":\"El parametro 'id_tarea' debe ser un numero entero.\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 400, mensaje=\"El parametro 'id_tarea' debe ser un numero entero.\"",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-08",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar tarea existente (mover a 'terminado')",
+      "metodo": "POST",
+      "ruta": "/updateTareas",
+      "url": "http://localhost:8091/updateTareas",
+      "entrada": {
+        "json": {
+          "id_tarea": 1006,
+          "nombre": "Tarea Prueba 122249",
+          "descripcion": "Tarea de la suite",
+          "fecha_vencimiento": "2026-12-01",
+          "lista": "terminado",
+          "estado": "success",
+          "id_proyecto": 1003
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; lista = 'terminado' y estado = 'success'",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2062,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_tarea, lista, estado FROM tareas WHERE id_tarea = 1006",
+      "bd_antes": [
+        {
+          "id_tarea": 1006,
+          "lista": "pendientes",
+          "estado": "warning"
+        }
+      ],
+      "sql_despues": "SELECT id_tarea, lista, estado FROM tareas WHERE id_tarea = 1006",
+      "bd_despues": [
+        {
+          "id_tarea": 1006,
+          "lista": "terminado",
+          "estado": "success"
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; lista 'pendientes' -> 'terminado'",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-09",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar tarea con id inexistente",
+      "metodo": "POST",
+      "ruta": "/updateTareas",
+      "url": "http://localhost:8091/updateTareas",
+      "entrada": {
+        "json": {
+          "id_tarea": 999999,
+          "nombre": "Tarea Fantasma 122249",
+          "lista": "pendientes",
+          "estado": "danger",
+          "id_proyecto": 1003
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0; NO se inserta una tarea nueva",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2051,
+      "respuesta": "0",
+      "sql_antes": "SELECT (SELECT COUNT(*) FROM tareas) AS total, (SELECT COUNT(*) FROM tareas WHERE nombre = 'Tarea Fantasma 122249') AS con_ese_nombre",
+      "bd_antes": [
+        {
+          "total": 5,
+          "con_ese_nombre": 0
+        }
+      ],
+      "sql_despues": "SELECT (SELECT COUNT(*) FROM tareas) AS total, (SELECT COUNT(*) FROM tareas WHERE nombre = 'Tarea Fantasma 122249') AS con_ese_nombre",
+      "bd_despues": [
+        {
+          "total": 5,
+          "con_ese_nombre": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '0'; tareas antes=5, despues=5",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-10",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Listar todas las tareas",
+      "metodo": "POST",
+      "ruta": "/buscarTareas",
+      "url": "http://localhost:8091/buscarTareas",
+      "entrada": {},
+      "esperado": "HTTP 200; arreglo con el mismo numero de registros que la tabla tareas",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2047,
+      "respuesta": "[{\"nombre\":\"Base de datos\",\"descripcion\":\"Estructura de las tablas\",\"lista\":\"terminado\",\"estado\":\"danger\",\"id_tarea\":1,\"fecha_vencimiento\":\"2026-09-13\",\"id_proyecto\":1},{\"nombre\":\"Endpoints\",\"descripcion\":\"CRUD de las 5 entidades\",\"lista\":\"encurso\",\"estado\":\"warning\",\"id_tarea\":2,\"fecha_vencimiento\":\"2026-10-10\",\"id_proyecto\":1},{\"nombre\":\"Pruebas\",\"descripcion\":\"Pruebas unitarias al 100%\",\"lista\":\"pendientes\",\"estado\":\"success\",\"id_tarea\":3,\"fecha_vencimiento\":\"2026-11-20\",\"id_proyecto\":1},{\"nombre\":\"Vistas\",\"descripcion\":\"Pantallas de inicio y login\",\"lista\":\"encurso\",\"estado\":\"primary\",\"id_tarea\":4,\"fecha_vencimiento\":\"2026-11-01\",\"id_proyecto\":2},{\"nombre\":\"Tarea Prueba 122249\",\"descripcion\":\"Tarea de la suite\",\"lista\":\"terminado\",\"estado\":\"success\",\"id_tarea\":1006,\"fecha_vencimiento\":\"2026-12-01\",\"id_proyecto\":1003}]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS total FROM tareas",
+      "bd_despues": [
+        {
+          "total": 5
+        }
+      ],
+      "obtenido": "HTTP 200, 5 tareas en la respuesta, 5 en la BD",
+      "estado": "PASA"
+    },
+    {
+      "id": "ASG-01",
+      "modulo": "Asignaciones",
+      "tipo": "Endpoint",
+      "descripcion": "Asignar la tarea creada al usuario 1 (INSERT)",
+      "metodo": "POST",
+      "ruta": "/addAsignacion",
+      "url": "http://localhost:8091/addAsignacion",
+      "entrada": {
+        "json": {
+          "id_usuario": 1,
+          "id_tarea": 1006,
+          "fecha_asignacion": "2026-11-22"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; la asignacion existe con id_usuario=1 e id_tarea de la tarea creada",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2050,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_asignacion, id_usuario, id_tarea, fecha_asignacion FROM asignaciones WHERE id_tarea = 1006",
+      "bd_antes": [],
+      "sql_despues": "SELECT id_asignacion, id_usuario, id_tarea, fecha_asignacion FROM asignaciones WHERE id_tarea = 1006",
+      "bd_despues": [
+        {
+          "id_asignacion": 1008,
+          "id_usuario": 1,
+          "id_tarea": 1006,
+          "fecha_asignacion": "2026-11-22"
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; filas antes=0, despues=1",
+      "estado": "PASA"
+    },
+    {
+      "id": "ASG-02",
+      "modulo": "Asignaciones",
+      "tipo": "Endpoint",
+      "descripcion": "Asignar a un usuario inexistente (llave foranea)",
+      "metodo": "POST",
+      "ruta": "/addAsignacion",
+      "url": "http://localhost:8091/addAsignacion",
+      "entrada": {
+        "json": {
+          "id_usuario": 999999,
+          "id_tarea": 1006,
+          "fecha_asignacion": "2026-11-22"
+        }
+      },
+      "esperado": "Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no cambia el numero de asignaciones",
+      "http_esperado": 409,
+      "http": 409,
+      "ms": 2074,
+      "respuesta": "{\"resultado\":0,\"estado\":409,\"error\":\"Datos invalidos\",\"mensaje\":\"Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.\"}",
+      "sql_antes": "SELECT COUNT(*) AS total FROM asignaciones",
+      "bd_antes": [
+        {
+          "total": 3
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS total FROM asignaciones",
+      "bd_despues": [
+        {
+          "total": 3
+        }
+      ],
+      "obtenido": "HTTP 409, mensaje='Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.'; asignaciones antes=3, despues=3",
+      "estado": "PASA"
+    },
+    {
+      "id": "ASG-03",
+      "modulo": "Asignaciones",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar asignacion por id existente",
+      "metodo": "GET",
+      "ruta": "/buscarAsignacion",
+      "url": "http://localhost:8091/buscarAsignacion?id=1008",
+      "entrada": {
+        "query": {
+          "id": 1008
+        }
+      },
+      "esperado": "HTTP 200; JSON con la asignacion creada",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2049,
+      "respuesta": "{\"id_asignacion\":1008,\"id_usuario\":1,\"id_tarea\":1006,\"fecha_asignacion\":\"2026-11-22\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, id_asignacion=1008, id_tarea=1006",
+      "estado": "PASA"
+    },
+    {
+      "id": "ASG-04",
+      "modulo": "Asignaciones",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar asignacion con id inexistente",
+      "metodo": "GET",
+      "ruta": "/buscarAsignacion",
+      "url": "http://localhost:8091/buscarAsignacion?id=999999",
+      "entrada": {
+        "query": {
+          "id": 999999
+        }
+      },
+      "esperado": "HTTP 200; objeto vacio (id_asignacion = null)",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2040,
+      "respuesta": "{\"id_asignacion\":null,\"id_usuario\":null,\"id_tarea\":null,\"fecha_asignacion\":null}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, id_asignacion=None",
+      "estado": "PASA"
+    },
+    {
+      "id": "ASG-05",
+      "modulo": "Asignaciones",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar fecha de una asignacion existente",
+      "metodo": "POST",
+      "ruta": "/updateAsignacion",
+      "url": "http://localhost:8091/updateAsignacion",
+      "entrada": {
+        "json": {
+          "id_asignacion": 1008,
+          "id_usuario": 1,
+          "id_tarea": 1006,
+          "fecha_asignacion": "2026-11-30"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; fecha_asignacion = 2026-11-30",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2090,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_asignacion, fecha_asignacion FROM asignaciones WHERE id_asignacion = 1008",
+      "bd_antes": [
+        {
+          "id_asignacion": 1008,
+          "fecha_asignacion": "2026-11-22"
+        }
+      ],
+      "sql_despues": "SELECT id_asignacion, fecha_asignacion FROM asignaciones WHERE id_asignacion = 1008",
+      "bd_despues": [
+        {
+          "id_asignacion": 1008,
+          "fecha_asignacion": "2026-11-30"
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; fecha 2026-11-22 -> 2026-11-30",
+      "estado": "PASA"
+    },
+    {
+      "id": "ASG-06",
+      "modulo": "Asignaciones",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar asignacion con id inexistente",
+      "metodo": "POST",
+      "ruta": "/updateAsignacion",
+      "url": "http://localhost:8091/updateAsignacion",
+      "entrada": {
+        "json": {
+          "id_asignacion": 999999,
+          "id_usuario": 1,
+          "id_tarea": 1006,
+          "fecha_asignacion": "2026-11-30"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0; NO se inserta una asignacion nueva",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2063,
+      "respuesta": "0",
+      "sql_antes": "SELECT COUNT(*) AS total FROM asignaciones",
+      "bd_antes": [
+        {
+          "total": 3
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS total FROM asignaciones",
+      "bd_despues": [
+        {
+          "total": 3
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '0'; asignaciones antes=3, despues=3",
+      "estado": "PASA"
+    },
+    {
+      "id": "ASG-07",
+      "modulo": "Asignaciones",
+      "tipo": "Endpoint",
+      "descripcion": "Listar todas las asignaciones",
+      "metodo": "POST",
+      "ruta": "/buscarAsignaciones",
+      "url": "http://localhost:8091/buscarAsignaciones",
+      "entrada": {},
+      "esperado": "HTTP 200; arreglo con el mismo numero de registros que la tabla asignaciones",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2062,
+      "respuesta": "[{\"id_asignacion\":1,\"id_usuario\":1,\"id_tarea\":1,\"fecha_asignacion\":\"2026-09-01\"},{\"id_asignacion\":2,\"id_usuario\":2,\"id_tarea\":2,\"fecha_asignacion\":\"2026-09-20\"},{\"id_asignacion\":1008,\"id_usuario\":1,\"id_tarea\":1006,\"fecha_asignacion\":\"2026-11-30\"}]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS total FROM asignaciones",
+      "bd_despues": [
+        {
+          "total": 3
+        }
+      ],
+      "obtenido": "HTTP 200, 3 asignaciones en la respuesta, 3 en la BD",
+      "estado": "PASA"
+    },
+    {
+      "id": "ASG-08",
+      "modulo": "Asignaciones",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar asignacion existente",
+      "metodo": "DELETE",
+      "ruta": "/deleteAsignacion",
+      "url": "http://localhost:8091/deleteAsignacion",
+      "entrada": {
+        "json": {
+          "id_asignacion": 1008
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; el registro ya no existe",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2071,
+      "respuesta": "1",
+      "sql_antes": "SELECT COUNT(*) AS registros FROM asignaciones WHERE id_asignacion = 1008",
+      "bd_antes": [
+        {
+          "registros": 1
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS registros FROM asignaciones WHERE id_asignacion = 1008",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; registros antes=1, despues=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "ASG-09",
+      "modulo": "Asignaciones",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar asignacion con id inexistente",
+      "metodo": "DELETE",
+      "ruta": "/deleteAsignacion",
+      "url": "http://localhost:8091/deleteAsignacion",
+      "entrada": {
+        "json": {
+          "id_asignacion": 999999
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2054,
+      "respuesta": "0",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, respuesta '0'",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-01",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de comentario en la tarea creada (INSERT)",
+      "metodo": "POST",
+      "ruta": "/addComentario",
+      "url": "http://localhost:8091/addComentario",
+      "entrada": {
+        "json": {
+          "id_usuario": "Ana Demo",
+          "id_tarea": 1006,
+          "texto_comentario": "Comentario de prueba 122249",
+          "fecha_hora": "2026-11-22 10:30:00"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; el comentario existe ligado a la tarea",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2050,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_comentario, texto_comentario, id_usuario, id_tarea, fecha_hora FROM comentarios WHERE texto_comentario = 'Comentario de prueba 122249'",
+      "bd_antes": [],
+      "sql_despues": "SELECT id_comentario, texto_comentario, id_usuario, id_tarea, fecha_hora FROM comentarios WHERE texto_comentario = 'Comentario de prueba 122249'",
+      "bd_despues": [
+        {
+          "id_comentario": 1010,
+          "texto_comentario": "Comentario de prueba 122249",
+          "id_usuario": "Ana Demo",
+          "id_tarea": 1006,
+          "fecha_hora": "2026-11-22 10:30:00"
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; filas despues=1",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-02",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Alta de comentario sin texto (columna NOT NULL)",
+      "metodo": "POST",
+      "ruta": "/addComentario",
+      "url": "http://localhost:8091/addComentario",
+      "entrada": {
+        "json": {
+          "id_usuario": "Ana Demo",
+          "id_tarea": 1006,
+          "fecha_hora": "2026-11-22 10:31:00"
+        }
+      },
+      "esperado": "Error controlado: HTTP 409 con JSON {resultado:0, mensaje}; no cambia el numero de comentarios",
+      "http_esperado": 409,
+      "http": 409,
+      "ms": 2066,
+      "respuesta": "{\"resultado\":0,\"estado\":409,\"error\":\"Datos invalidos\",\"mensaje\":\"Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.\"}",
+      "sql_antes": "SELECT COUNT(*) AS total FROM comentarios",
+      "bd_antes": [
+        {
+          "total": 4
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS total FROM comentarios",
+      "bd_despues": [
+        {
+          "total": 4
+        }
+      ],
+      "obtenido": "HTTP 409, mensaje='Los datos no cumplen las reglas de la base de datos: campo obligatorio vacio, valor duplicado, formato invalido o referencia a un registro inexistente.'; comentarios antes=4, despues=4",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-03",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Listar comentarios de una tarea",
+      "metodo": "POST",
+      "ruta": "/getComentario",
+      "url": "http://localhost:8091/getComentario",
+      "entrada": {
+        "json": {
+          "id_tarea": 1006
+        }
+      },
+      "esperado": "HTTP 200; arreglo con los comentarios de la tarea, igual a la BD",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2054,
+      "respuesta": "[{\"id_comentario\":1010,\"id_usuario\":\"Ana Demo\",\"id_tarea\":1006,\"texto_comentario\":\"Comentario de prueba 122249\",\"fecha_hora\":\"2026-11-22 10:30:00\"}]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT id_comentario FROM comentarios WHERE id_tarea = 1006",
+      "bd_despues": [
+        {
+          "id_comentario": 1010
+        }
+      ],
+      "obtenido": "HTTP 200, 1 comentario(s) en la respuesta, 1 en la BD",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-04",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Listar comentarios de una tarea inexistente",
+      "metodo": "POST",
+      "ruta": "/getComentario",
+      "url": "http://localhost:8091/getComentario",
+      "entrada": {
+        "json": {
+          "id_tarea": 999999
+        }
+      },
+      "esperado": "HTTP 200; arreglo vacio []",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2056,
+      "respuesta": "[]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, respuesta '[]'",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-05",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar comentario por id existente",
+      "metodo": "GET",
+      "ruta": "/buscarComentario",
+      "url": "http://localhost:8091/buscarComentario?id=1010",
+      "entrada": {
+        "query": {
+          "id": 1010
+        }
+      },
+      "esperado": "HTTP 200; JSON con el comentario creado",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2040,
+      "respuesta": "{\"id_comentario\":1010,\"id_usuario\":\"Ana Demo\",\"id_tarea\":1006,\"texto_comentario\":\"Comentario de prueba 122249\",\"fecha_hora\":\"2026-11-22 10:30:00\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, id_comentario=1010, texto='Comentario de prueba 122249'",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-06",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Buscar comentario SIN el parametro id",
+      "metodo": "GET",
+      "ruta": "/buscarComentario",
+      "url": "http://localhost:8091/buscarComentario",
+      "entrada": {},
+      "esperado": "Error controlado: HTTP 400 con mensaje que indique el parametro faltante 'id'",
+      "http_esperado": 400,
+      "http": 400,
+      "ms": 2038,
+      "respuesta": "{\"resultado\":0,\"estado\":400,\"error\":\"Solicitud invalida\",\"mensaje\":\"Falta el parametro obligatorio 'id'.\"}",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 400, mensaje=\"Falta el parametro obligatorio 'id'.\"",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-07",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar texto de un comentario existente",
+      "metodo": "POST",
+      "ruta": "/updateComentario",
+      "url": "http://localhost:8091/updateComentario",
+      "entrada": {
+        "json": {
+          "id_comentario": 1010,
+          "id_usuario": "Ana Demo",
+          "id_tarea": 1006,
+          "texto_comentario": "Comentario de prueba 122249 (editado)",
+          "fecha_hora": "2026-11-22 10:30:00"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; texto_comentario actualizado",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2066,
+      "respuesta": "1",
+      "sql_antes": "SELECT id_comentario, texto_comentario FROM comentarios WHERE id_comentario = 1010",
+      "bd_antes": [
+        {
+          "id_comentario": 1010,
+          "texto_comentario": "Comentario de prueba 122249"
+        }
+      ],
+      "sql_despues": "SELECT id_comentario, texto_comentario FROM comentarios WHERE id_comentario = 1010",
+      "bd_despues": [
+        {
+          "id_comentario": 1010,
+          "texto_comentario": "Comentario de prueba 122249 (editado)"
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; texto -> 'Comentario de prueba 122249 (editado)'",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-08",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Actualizar comentario con id inexistente",
+      "metodo": "POST",
+      "ruta": "/updateComentario",
+      "url": "http://localhost:8091/updateComentario",
+      "entrada": {
+        "json": {
+          "id_comentario": 999999,
+          "id_usuario": "Ana Demo",
+          "id_tarea": 1006,
+          "texto_comentario": "Comentario fantasma",
+          "fecha_hora": "2026-11-22 10:30:00"
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0; NO se inserta un comentario nuevo",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2031,
+      "respuesta": "0",
+      "sql_antes": "SELECT COUNT(*) AS total FROM comentarios",
+      "bd_antes": [
+        {
+          "total": 4
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS total FROM comentarios",
+      "bd_despues": [
+        {
+          "total": 4
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '0'; comentarios antes=4, despues=4",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-09",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Listar todos los comentarios",
+      "metodo": "POST",
+      "ruta": "/buscarComentarios",
+      "url": "http://localhost:8091/buscarComentarios",
+      "entrada": {},
+      "esperado": "HTTP 200; arreglo con el mismo numero de registros que la tabla comentarios",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2041,
+      "respuesta": "[{\"id_comentario\":1,\"id_usuario\":\"Ana Demo\",\"id_tarea\":1,\"texto_comentario\":\"Tablas listas para revision\",\"fecha_hora\":\"2026-09-12 13:48:00\"},{\"id_comentario\":2,\"id_usuario\":\"Docente Demo\",\"id_tarea\":1,\"texto_comentario\":\"Aprobado\",\"fecha_hora\":\"2026-09-13 09:10:00\"},{\"id_comentario\":3,\"id_usuario\":\"Luis Demo\",\"id_tarea\":2,\"texto_comentario\":\"Falta el endpoint de login\",\"fecha_hora\":\"2026-10-05 17:30:00\"},{\"id_comentario\":1010,\"id_usuario\":\"Ana Demo\",\"id_tarea\":1006,\"texto_comentario\":\"Comentario de prueba 122249 (editado)\",\"fecha_hora\":\"2026-11-22 10:30:00\"}]",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": "SELECT COUNT(*) AS total FROM comentarios",
+      "bd_despues": [
+        {
+          "total": 4
+        }
+      ],
+      "obtenido": "HTTP 200, 4 comentarios en la respuesta, 4 en la BD",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-10",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar comentario existente",
+      "metodo": "DELETE",
+      "ruta": "/deleteComentario",
+      "url": "http://localhost:8091/deleteComentario",
+      "entrada": {
+        "json": {
+          "id_comentario": 1010
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; el registro ya no existe",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2063,
+      "respuesta": "1",
+      "sql_antes": "SELECT COUNT(*) AS registros FROM comentarios WHERE id_comentario = 1010",
+      "bd_antes": [
+        {
+          "registros": 1
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS registros FROM comentarios WHERE id_comentario = 1010",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; registros antes=1, despues=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "COM-11",
+      "modulo": "Comentarios",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar comentario con id inexistente",
+      "metodo": "DELETE",
+      "ruta": "/deleteComentario",
+      "url": "http://localhost:8091/deleteComentario",
+      "entrada": {
+        "json": {
+          "id_comentario": 999999
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2065,
+      "respuesta": "0",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, respuesta '0'",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-11",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar tarea existente",
+      "metodo": "DELETE",
+      "ruta": "/deleteTareas",
+      "url": "http://localhost:8091/deleteTareas",
+      "entrada": {
+        "json": {
+          "id_tarea": 1006
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; el registro ya no existe",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2070,
+      "respuesta": "1",
+      "sql_antes": "SELECT COUNT(*) AS registros FROM tareas WHERE id_tarea = 1006",
+      "bd_antes": [
+        {
+          "registros": 1
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS registros FROM tareas WHERE id_tarea = 1006",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; registros antes=1, despues=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "TAR-12",
+      "modulo": "Tareas",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar tarea con id inexistente",
+      "metodo": "DELETE",
+      "ruta": "/deleteTareas",
+      "url": "http://localhost:8091/deleteTareas",
+      "entrada": {
+        "json": {
+          "id_tarea": 999999
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2046,
+      "respuesta": "0",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, respuesta '0'",
+      "estado": "PASA"
+    },
+    {
+      "id": "INT-01",
+      "modulo": "Integridad",
+      "tipo": "Base de datos",
+      "descripcion": "Eliminar proyecto con tarea, comentario y asignacion (ON DELETE CASCADE)",
+      "metodo": "DELETE",
+      "ruta": "/deleteProyecto",
+      "url": "http://localhost:8091/deleteProyecto",
+      "entrada": {
+        "json": {
+          "id_proyecto": 1012
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; se eliminan en cascada el proyecto, sus tareas, comentarios y asignaciones",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2062,
+      "respuesta": "1",
+      "sql_antes": "SELECT (SELECT COUNT(*) FROM proyectos WHERE id_proyecto = 1012) AS proyecto, (SELECT COUNT(*) FROM tareas WHERE id_proyecto = 1012) AS tareas, (SELECT COUNT(*) FROM comentarios WHERE id_tarea = 1013) AS comentarios, (SELECT COUNT(*) FROM asignaciones WHERE id_tarea = 1013) AS asignaciones",
+      "bd_antes": [
+        {
+          "proyecto": 1,
+          "tareas": 1,
+          "comentarios": 1,
+          "asignaciones": 1
+        }
+      ],
+      "sql_despues": "SELECT (SELECT COUNT(*) FROM proyectos WHERE id_proyecto = 1012) AS proyecto, (SELECT COUNT(*) FROM tareas WHERE id_proyecto = 1012) AS tareas, (SELECT COUNT(*) FROM comentarios WHERE id_tarea = 1013) AS comentarios, (SELECT COUNT(*) FROM asignaciones WHERE id_tarea = 1013) AS asignaciones",
+      "bd_despues": [
+        {
+          "proyecto": 0,
+          "tareas": 0,
+          "comentarios": 0,
+          "asignaciones": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; antes={'proyecto': 1, 'tareas': 1, 'comentarios': 1, 'asignaciones': 1}, despues={'proyecto': 0, 'tareas': 0, 'comentarios': 0, 'asignaciones': 0}",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-10",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar proyecto existente",
+      "metodo": "DELETE",
+      "ruta": "/deleteProyecto",
+      "url": "http://localhost:8091/deleteProyecto",
+      "entrada": {
+        "json": {
+          "id_proyecto": 1003
+        }
+      },
+      "esperado": "HTTP 200, respuesta 1; el registro ya no existe",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2037,
+      "respuesta": "1",
+      "sql_antes": "SELECT COUNT(*) AS registros FROM proyectos WHERE id_proyecto = 1003",
+      "bd_antes": [
+        {
+          "registros": 1
+        }
+      ],
+      "sql_despues": "SELECT COUNT(*) AS registros FROM proyectos WHERE id_proyecto = 1003",
+      "bd_despues": [
+        {
+          "registros": 0
+        }
+      ],
+      "obtenido": "HTTP 200, respuesta '1'; registros antes=1, despues=0",
+      "estado": "PASA"
+    },
+    {
+      "id": "PRY-11",
+      "modulo": "Proyectos",
+      "tipo": "Endpoint",
+      "descripcion": "Eliminar proyecto con id inexistente",
+      "metodo": "DELETE",
+      "ruta": "/deleteProyecto",
+      "url": "http://localhost:8091/deleteProyecto",
+      "entrada": {
+        "json": {
+          "id_proyecto": 999999
+        }
+      },
+      "esperado": "HTTP 200, respuesta 0",
+      "http_esperado": 200,
+      "http": 200,
+      "ms": 2042,
+      "respuesta": "0",
+      "sql_antes": null,
+      "bd_antes": null,
+      "sql_despues": null,
+      "bd_despues": null,
+      "obtenido": "HTTP 200, respuesta '0'",
+      "estado": "PASA"
+    }
+  ]
+}
