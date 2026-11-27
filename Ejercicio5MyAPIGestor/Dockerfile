@@ -18,7 +18,7 @@ RUN addgroup -S gestor && adduser -S gestor -G gestor
 WORKDIR /app
 COPY --from=build /build/app.jar app.jar
 USER gestor
-EXPOSE 8081
+EXPOSE 8081 9081
 HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=6 \
-  CMD wget -q -O /dev/null --post-data='' http://localhost:8081/buscarProyectos || exit 1
+  CMD wget -q -O /dev/null http://localhost:9081/actuator/health || exit 1
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/app.jar"]
