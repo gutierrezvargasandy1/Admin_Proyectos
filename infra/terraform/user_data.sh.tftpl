@@ -1,0 +1,46 @@
+#!/bin/bash
+# Aprovisionamiento inicial de la instancia (cloud-init). Bitacora en /var/log/aprovisionamiento.log
+set -euxo pipefail
+exec > /var/log/aprovisionamiento.log 2>&1
+
+APT="apt-get -y -o DPkg::Lock::Timeout=600"
+
+# 1. Memoria swap de 2 GB (la instancia tiene 2 GB de RAM para 9 contenedores)
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  echo 'vm.swappiness=10' > /etc/sysctl.d/99-swap.conf
+  sysctl --system
+fi
+
+# 2. Docker Engine y plugin de Compose desde el repositorio oficial de Docker
+$APT update
+$APT install ca-certificates curl git
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+$APT update
+$APT install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# 3. Rotacion de registros de todos los contenedores (3 archivos de 10 MB)
+cat > /etc/docker/daemon.json <<'JSON'
+{
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "10m", "max-file": "3" }
+}
+JSON
+systemctl enable docker
+systemctl restart docker
+usermod -aG docker ubuntu
+
+# 4. Codigo del proyecto
+if [ ! -d /home/ubuntu/gestor ]; then
+  sudo -u ubuntu git clone --branch "${rama}" "${repo_url}" /home/ubuntu/gestor || echo "No se pudo clonar el repositorio"
+fi
+
+echo "Aprovisionamiento terminado: $(date -Is)" > /home/ubuntu/APROVISIONAMIENTO_OK
+chown ubuntu:ubuntu /home/ubuntu/APROVISIONAMIENTO_OK

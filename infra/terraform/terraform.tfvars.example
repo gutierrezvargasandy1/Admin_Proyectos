@@ -1,0 +1,8 @@
+# Copia este archivo como terraform.tfvars (no se sube a GitHub) y escribe tu IP publica.
+# Para obtenerla en PowerShell:  (Invoke-RestMethod https://checkip.amazonaws.com).Trim()
+mi_ip_cidr = "0.0.0.0/32"
+
+# Valores opcionales (ya tienen un valor por defecto)
+# region         = "us-east-1"
+# tipo_instancia = "t3.small"
+# disco_gb       = 20

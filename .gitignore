@@ -44,3 +44,22 @@ Ejercicio5Cliente/src/main/resources/static/Images/manual.mp4
 Ejercicio5Cliente/src/main/resources/static/Images/tutorial.mp4
 Ejercicio5Cliente/src/main/resources/static/Images/fondo.gif
 Ejercicio5Cliente/src/main/resources/static/Images/fondoLogin.gif
+
+# Terraform: estado, proveedores descargados y variables con datos propios
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+*.tfplan
+
+# Llaves y certificados
+*.pem
+*.key
+**/gestor_aws
+**/gestor_aws.pub
+
+# Evidencias generadas en la instancia y reportes locales de k6
+evidencias/
+infra/k6/resultados/
