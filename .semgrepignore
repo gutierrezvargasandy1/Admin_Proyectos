@@ -1,0 +1,12 @@
+# Archivos que Semgrep no analiza: compilados y librerias de terceros minificadas
+target/
+**/target/
+**/static/css/bootstrap*
+**/static/js/bootstrap*
+**/static/js/jquery*
+**/*.min.js
+**/*.map
+Ejercicio5MyAPIGestor/pruebas_python/resultados/
+.terraform/
+**/reportes/
+.herramientas/

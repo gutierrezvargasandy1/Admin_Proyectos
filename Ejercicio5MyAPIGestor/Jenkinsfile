@@ -88,6 +88,34 @@ pipeline {
             }
         }
 
+        stage('SAST con Semgrep') {
+            steps {
+                // Analisis estatico de seguridad. Se ejecuta desde la raiz para respetar .semgrepignore.
+                sh """
+                    mkdir -p ${APP_DIR}/reportes
+                    semgrep --version
+                    semgrep scan --metrics=off --disable-version-check \\
+                      --config p/java --config p/owasp-top-ten --config p/secrets --config p/dockerfile \\
+                      --json --output ${APP_DIR}/reportes/semgrep.json ${APP_DIR}
+                """
+                script {
+                    // Umbral: hallazgos de severidad ERROR dejan el build en UNSTABLE (amarillo)
+                    def umbral = sh(returnStatus: true,
+                        script: "python3 infra/ci/semgrep_umbral.py ${APP_DIR}/reportes/semgrep.json ${APP_DIR}/reportes/semgrep-resumen.txt")
+                    if (umbral == 2) {
+                        unstable('Semgrep encontro hallazgos de severidad ERROR (ver semgrep-resumen.txt)')
+                    } else if (umbral != 0) {
+                        error('No se pudo interpretar el reporte de Semgrep')
+                    }
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: "${APP_DIR}/reportes/semgrep*", allowEmptyArchive: true
+                }
+            }
+        }
+
         stage('Escaneo de vulnerabilidades') {
             steps {
                 dir(APP_DIR) {
@@ -123,7 +151,7 @@ pipeline {
         }
         unstable {
             archiveArtifacts artifacts: "${APP_DIR}/target/*.jar", fingerprint: true
-            echo 'Pipeline backend INESTABLE: revisar el Reporte Dependency-Check.'
+            echo 'Pipeline backend INESTABLE: revisar el Reporte Dependency-Check y el resumen de Semgrep.'
         }
         failure {
             echo 'Pipeline backend FALLO: revisar la etapa marcada en rojo.'

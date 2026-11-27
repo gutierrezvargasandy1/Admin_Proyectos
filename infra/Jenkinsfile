@@ -1,0 +1,105 @@
+// Pipeline de infraestructura: valida el codigo de Terraform, la configuracion de despliegue
+// y monitoreo, y la analiza con Semgrep antes de aplicarla en AWS.
+// No usa credenciales de AWS: terraform validate trabaja sin conectarse a la nube.
+pipeline {
+    agent any
+
+    environment {
+        TF_VERSION          = '1.17.1'
+        TF_DIR              = 'infra/terraform'
+        TF_IN_AUTOMATION    = 'true'
+        TF_PLUGIN_CACHE_DIR = "${env.JENKINS_HOME}/.terraform.d/plugin-cache"
+    }
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 30, unit: 'MINUTES')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Preparar Terraform') {
+            steps {
+                sh '''
+                    mkdir -p .herramientas "$TF_PLUGIN_CACHE_DIR"
+                    if ! .herramientas/terraform version 2>/dev/null | grep -q "v${TF_VERSION}"; then
+                      curl -fsSL -o .herramientas/terraform.zip \
+                        "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
+                      unzip -o -q .herramientas/terraform.zip -d .herramientas
+                      rm -f .herramientas/terraform.zip
+                    fi
+                    .herramientas/terraform version
+                '''
+            }
+        }
+
+        stage('Formato (terraform fmt)') {
+            steps {
+                sh '.herramientas/terraform -chdir=${TF_DIR} fmt -check -recursive -diff'
+            }
+        }
+
+        stage('Validacion (terraform validate)') {
+            steps {
+                sh '''
+                    .herramientas/terraform -chdir=${TF_DIR} init -backend=false -input=false
+                    .herramientas/terraform -chdir=${TF_DIR} validate
+                '''
+            }
+        }
+
+        stage('Configuracion de despliegue y monitoreo') {
+            steps {
+                sh 'python3 infra/ci/validar_configuracion.py'
+            }
+        }
+
+        stage('SAST con Semgrep') {
+            steps {
+                sh '''
+                    mkdir -p infra/reportes
+                    semgrep --version
+                    semgrep scan --metrics=off --disable-version-check \
+                      --config p/terraform --config p/dockerfile --config p/docker-compose --config p/secrets \
+                      --json --output infra/reportes/semgrep.json \
+                      infra docker-compose.aws.yml docker-compose.despliegue.yml database/Dockerfile \
+                      Ejercicio5MyAPIGestor/Dockerfile Ejercicio5Cliente/Dockerfile
+                '''
+                script {
+                    def umbral = sh(returnStatus: true,
+                        script: 'python3 infra/ci/semgrep_umbral.py infra/reportes/semgrep.json infra/reportes/semgrep-resumen.txt')
+                    if (umbral == 2) {
+                        unstable('Semgrep encontro hallazgos de severidad ERROR (ver semgrep-resumen.txt)')
+                    } else if (umbral != 0) {
+                        error('No se pudo interpretar el reporte de Semgrep')
+                    }
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'infra/reportes/semgrep*', allowEmptyArchive: true
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            archiveArtifacts artifacts: 'infra/terraform/*.tf, infra/terraform/.terraform.lock.hcl', fingerprint: true, allowEmptyArchive: true
+            echo 'Pipeline de infraestructura OK: Terraform con formato y valido, configuracion y SAST aprobados.'
+        }
+        unstable {
+            echo 'Pipeline de infraestructura INESTABLE: revisar el resumen de Semgrep.'
+        }
+        failure {
+            echo 'Pipeline de infraestructura FALLO: revisar la etapa marcada en rojo.'
+        }
+    }
+}
