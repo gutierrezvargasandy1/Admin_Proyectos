@@ -1,0 +1,89 @@
+# Reglas de alerta del Gestor de Proyectos
+groups:
+
+  - name: disponibilidad
+    rules:
+      - alert: ServicioSinMetricas
+        expr: up{job=~"gestor-api|gestor-cliente|servidor"} == 0
+        for: 1m
+        labels:
+          severidad: critica
+        annotations:
+          resumen: "{{ $labels.job }} no entrega metricas"
+          descripcion: "Prometheus no puede leer {{ $labels.instance }} desde hace mas de 1 minuto."
+
+      - alert: SondeoHttpFallido
+        expr: probe_success{job="sondeo-http"} == 0
+        for: 1m
+        labels:
+          severidad: critica
+        annotations:
+          resumen: "Falla el sondeo HTTP de {{ $labels.instance }}"
+          descripcion: "El endpoint no responde con codigo 2xx desde hace mas de 1 minuto."
+
+      - alert: BaseDeDatosInaccesible
+        expr: probe_success{job="sondeo-tcp"} == 0
+        for: 1m
+        labels:
+          severidad: critica
+        annotations:
+          resumen: "MariaDB no acepta conexiones TCP"
+          descripcion: "El sondeo TCP a {{ $labels.instance }} falla desde hace mas de 1 minuto."
+
+  - name: rendimiento
+    rules:
+      - alert: LatenciaAltaApi
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job="gestor-api"}[5m]))) > 1
+        for: 3m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "Latencia p95 de la API mayor a 1 s"
+          descripcion: "El percentil 95 del tiempo de respuesta de la API es {{ $value | humanizeDuration }}."
+
+      - alert: ErroresServidor5xx
+        expr: sum by (job) (rate(http_server_requests_seconds_count{status=~"5.."}[5m])) > 0.05
+        for: 2m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "{{ $labels.job }} responde errores 5xx"
+          descripcion: "Mas de 0.05 respuestas 5xx por segundo durante 2 minutos."
+
+  - name: recursos
+    rules:
+      - alert: MemoriaServidorBaja
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.15
+        for: 3m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "Memoria disponible del servidor menor al 15 %"
+          descripcion: "Disponible: {{ $value | humanizePercentage }} de la memoria total."
+
+      - alert: CpuServidorAlta
+        expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 85
+        for: 5m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "Uso de CPU del servidor mayor al 85 %"
+          descripcion: "CPU en uso: {{ $value | printf \"%.1f\" }} %."
+
+      - alert: DiscoServidorLleno
+        expr: node_filesystem_avail_bytes{mountpoint="/", fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/", fstype!~"tmpfs|overlay"} < 0.15
+        for: 10m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "Disco del servidor con menos del 15 % libre"
+          descripcion: "Espacio libre: {{ $value | humanizePercentage }}."
+
+      - alert: HeapJvmAlto
+        expr: sum by (job) (jvm_memory_used_bytes{area="heap"}) / sum by (job) (jvm_memory_max_bytes{area="heap"} > 0) > 0.9
+        for: 5m
+        labels:
+          severidad: advertencia
+        annotations:
+          resumen: "Heap de la JVM de {{ $labels.job }} arriba del 90 %"
+          descripcion: "Uso del heap: {{ $value | humanizePercentage }}."

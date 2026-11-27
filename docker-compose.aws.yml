@@ -1,0 +1,158 @@
+# Despliegue del Gestor de Proyectos en la instancia EC2 de AWS (creada con infra/terraform).
+#
+#   cp .env.aws.example .env      # y escribir las contrasenas
+#   bash infra/scripts/desplegar.sh
+#
+# Red gestor-net: base de datos, API, cliente web y tunel de Cloudflare.
+# Red monitoreo : Prometheus, exportadores y Grafana. Prometheus y blackbox-exporter
+#                 estan en ambas redes para poder medir los microservicios.
+# Publicado a internet: solo el cliente web (puerto 80 y tunel HTTPS de Cloudflare).
+# Prometheus y Grafana solo escuchan en 127.0.0.1 y se consultan con un tunel SSH.
+
+name: gestor-aws
+
+x-registros: &registros
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+
+  gestor-db:
+    build: ./database
+    image: gestor-db:1.0
+    container_name: gestor-db
+    restart: unless-stopped
+    command: ["--innodb-buffer-pool-size=64M", "--performance-schema=OFF", "--max-connections=60"]
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Falta DB_ROOT_PASSWORD en .env}
+      MARIADB_DATABASE: db_cbtis
+      MARIADB_USER: ${DB_USER:-gestor}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
+    volumes:
+      - gestor-db-data:/var/lib/mysql
+    networks: [gestor-net]
+    mem_limit: 256m
+    <<: *registros
+
+  gestor-api:
+    build: ./Ejercicio5MyAPIGestor
+    image: gestor-api:1.0
+    container_name: gestor-api
+    restart: unless-stopped
+    depends_on:
+      gestor-db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mariadb://gestor-db:3306/db_cbtis
+      DB_USER: ${DB_USER:-gestor}
+      DB_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
+    networks: [gestor-net]
+    mem_limit: 448m
+    <<: *registros
+
+  gestor-cliente:
+    build: ./Ejercicio5Cliente
+    image: gestor-cliente:1.0
+    container_name: gestor-cliente
+    restart: unless-stopped
+    depends_on:
+      gestor-api:
+        condition: service_healthy
+    environment:
+      API_URL: http://gestor-api:8081
+      SERVER_FORWARDHEADERSSTRATEGY: native
+    ports:
+      - "80:8082"
+    networks: [gestor-net]
+    mem_limit: 384m
+    <<: *registros
+
+  gestor-tunel:
+    image: cloudflare/cloudflared:2026.11.2
+    container_name: gestor-tunel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://gestor-cliente:8082
+    depends_on:
+      gestor-cliente:
+        condition: service_healthy
+    networks: [gestor-net]
+    mem_limit: 64m
+    <<: *registros
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --storage.tsdb.retention.size=512MB
+      - --web.enable-lifecycle
+    volumes:
+      - ./infra/monitoreo/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks: [gestor-net, monitoreo]
+    mem_limit: 256m
+    <<: *registros
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    networks: [monitoreo]
+    mem_limit: 48m
+    <<: *registros
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.29.1
+    container_name: blackbox-exporter
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./infra/monitoreo/blackbox:/etc/blackbox:ro
+    networks: [gestor-net, monitoreo]
+    mem_limit: 48m
+    <<: *registros
+
+  grafana:
+    image: grafana/grafana:12.4.15
+    container_name: grafana
+    restart: unless-stopped
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Falta GRAFANA_ADMIN_PASSWORD en .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/gestor-operacion.json
+    volumes:
+      - ./infra/monitoreo/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/monitoreo/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks: [monitoreo]
+    mem_limit: 192m
+    <<: *registros
+
+networks:
+  gestor-net:
+  monitoreo:
+
+volumes:
+  gestor-db-data:
+  prometheus-data:
+  grafana-data:

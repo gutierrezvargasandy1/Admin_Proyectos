@@ -1,0 +1,71 @@
+# Prometheus del Gestor de Proyectos (instancia EC2)
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    proyecto: gestor-proyectos
+    entorno: aws-ec2
+
+rule_files:
+  - /etc/prometheus/alertas.yml
+
+scrape_configs:
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Metricas de Spring Boot Actuator (Micrometer) en el puerto de administracion,
+  # que no se publica fuera de la red de Docker
+  - job_name: gestor-api
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["gestor-api:9081"]
+        labels:
+          capa: backend
+
+  - job_name: gestor-cliente
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["gestor-cliente:9082"]
+        labels:
+          capa: frontend
+
+  # Recursos del servidor: CPU, memoria, swap, disco y red
+  - job_name: servidor
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          capa: infraestructura
+
+  # Sondeos de disponibilidad desde el exportador blackbox
+  - job_name: sondeo-http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://gestor-cliente:8082/login
+          - http://gestor-api:9081/actuator/health
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  - job_name: sondeo-tcp
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+    static_configs:
+      - targets:
+          - gestor-db:3306
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
